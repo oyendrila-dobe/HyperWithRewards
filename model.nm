@@ -1,0 +1,26 @@
+mdp
+
+module main
+
+    x : [0..4];
+
+    [] x=0 -> 6/10:(x'=1) + 4/10:(x'=2);
+    [] x=1 -> (x'=3);
+    [] x=2 -> (x'=4);
+    [] x=3 -> (x'=3);
+    [] x=4 -> (x'=4);
+
+endmodule
+
+init (x=0) endinit
+
+label "begin" = (x=0);
+label "safe" = (x=3)|(x=4);
+
+rewards
+    x=0 : 10;
+    x=1 : 20;
+    x=2 : 30;
+    x=3 : 40;
+    x=4 : 50;
+endrewards
