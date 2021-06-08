@@ -29,7 +29,7 @@ turtle_grammar = """
           | "(" r "<=" r ")" -> lesseq_rew
 
     p: "P" phi  -> calc_probability
-          |p "+" p -> add_prob
+          | p "+" p -> add_prob
           | p "-" p -> minus_prob
           | p "." p -> mul_prob
           | NUM -> const
@@ -50,8 +50,8 @@ turtle_grammar = """
           | varname
           | varname "&" ap  ->and_vars
           |"(" varname "|" varname ")" ->or_vars
-          |ap "=>" start ->imply_vars
-          |ap "<->" ap ->iff_vars
+          | ap "=>" start ->imply_vars
+          | ap "<->" ap ->iff_vars
     varname: NAME "(" NAME ")" ->varname
 
 
@@ -73,17 +73,20 @@ s = None
 nos_of_subformula = 0
 f_pointer = None
 
+
 def SemanticsRewUnboundedUntil(model, formula_duplicate, n):
     return
+
 
 def SemanticsRewBoundedUntil(model, formula_duplicate, n):
     return
 
+
 def SemanticsRewNext(model, formula_duplicate, n):
     return
 
-def SemanticsUnboundedUntil(model, formula_duplicate, n):
 
+def SemanticsUnboundedUntil(model, formula_duplicate, n):
     global nos_of_subformula
     rel_quant = []
     index_of_phi = list_of_subformula.index(formula_duplicate)
@@ -747,7 +750,6 @@ def SemanticsFuture(model, formula_duplicate, n):
             dict_of_acts_tran[str(state.id) + ' ' + str(action.id)] = list_of_tran
         dict_of_acts[state.id] = list_of_act
 
-
     # actions thing          n = no.of quantifier, k = no. of state in the model
     index = []
     for j in range(0, n):
@@ -877,10 +879,12 @@ def SemanticsFuture(model, formula_duplicate, n):
 
     return rel_quant
 
+
 def SemanticsRewFuture(model, formula_duplicate, n):
     global nos_of_subformula
     rel_quant = []
-    reward_model = model.reward_models.get('') #Currently requires unnamed reward model. Could change this part to allow multiple reward models
+    reward_model = model.reward_models.get(
+        '')  # Currently requires unnamed reward model. Could change this part to allow multiple reward models
     relevant_quantifier = int(formula_duplicate.children[0].value[1])
     phi1 = formula_duplicate.children[1].children[0]
     child = formula_duplicate.children[1]
@@ -923,12 +927,14 @@ def SemanticsRewFuture(model, formula_duplicate, n):
         rew_phi = 'prob'
         rew_phi += str_r_state + '_' + str(index_of_phi)
         add_to_variable_list(rew_phi)
-        #new_prob_const = listOfReals[list_of_reals.index(prob_phi)] >= float(0)
+        # new_prob_const = listOfReals[list_of_reals.index(prob_phi)] >= float(0)
         first_implies = And(Implies(listOfBools[list_of_bools.index(holds1)],
-                                    (listOfReals[list_of_reals.index(rew_phi)] == float(reward_model.get_state_reward(r_state[relevant_quantifier -1])))),
+                                    (listOfReals[list_of_reals.index(rew_phi)] == float(
+                                        reward_model.get_state_reward(r_state[relevant_quantifier - 1])))),
                             Implies(Not(listOfReals[list_of_reals.index(prob_phi)] == float(1)),
-                                    listOfReals[list_of_reals.index(rew_phi)] == float(-1))) #How do we handle the case where prob != 1? TBD
-        nos_of_subformula += 2 #I'm not sure how we are counting subformulas. Need to verify.
+                                    listOfReals[list_of_reals.index(rew_phi)] == float(
+                                        -1)))  # How do we handle the case where prob != 1? TBD
+        nos_of_subformula += 2  # I'm not sure how we are counting subformulas. Need to verify.
 
         dicts = []
         for l in rel_quant:
@@ -945,8 +951,9 @@ def SemanticsRewFuture(model, formula_duplicate, n):
                     add_to_variable_list(name)
                     act_str = And(act_str, listOfInts[list_of_ints.index(name)] == int(ca[l - 1]))
 
-            implies_precedent = And(listOfReals[list_of_reals.index(prob_phi)] == float(1), Not(listOfBools[list_of_bools.index(holds1)]), act_str)
-            nos_of_subformula += 3 #Here too
+            implies_precedent = And(listOfReals[list_of_reals.index(prob_phi)] == float(1),
+                                    Not(listOfBools[list_of_bools.index(holds1)]), act_str)
+            nos_of_subformula += 3  # Here too
 
             dicts = []
             g = 0
@@ -963,7 +970,7 @@ def SemanticsRewFuture(model, formula_duplicate, n):
                 f = 0
                 prob_succ = 'prob'
                 # prob_succ1 = 'prob'
-                holds_succ = 'holds' #Do we actually use this?
+                holds_succ = 'holds'  # Do we actually use this?
                 rew_succ = 'rew'
                 p_first = True
                 prod_left_part = None
@@ -1005,7 +1012,8 @@ def SemanticsRewFuture(model, formula_duplicate, n):
                     prod_left += prod_left_part
                 nos_of_subformula += 1
 
-            implies_antecedent = listOfReals[list_of_reals.index(rew_phi)] == (float(reward_model.get_state_reward(r_state[relevant_quantifier -1])) + prod_left)
+            implies_antecedent = listOfReals[list_of_reals.index(rew_phi)] == (
+                    float(reward_model.get_state_reward(r_state[relevant_quantifier - 1])) + prod_left)
             nos_of_subformula += 1
             s.add(And(first_implies, Implies(implies_precedent, implies_antecedent)))
             nos_of_subformula += 1
@@ -1019,6 +1027,7 @@ def SemanticsRewFuture(model, formula_duplicate, n):
             index[i] = index[i] + 1
             r_state[i] = index[i]
     return rel_quant
+
 
 def Semantics(model, formula_duplicate, n):
     global nos_of_subformula
@@ -1638,7 +1647,8 @@ def Semantics(model, formula_duplicate, n):
 
     elif formula_duplicate.data == 'calc_reward':
         child = formula_duplicate.children[1]
-        prob_formula = Tree('calc_probability', [child]) #Importing a class for this is probably not the optimal way to do this, maybe try to find an alternative
+        prob_formula = Tree('calc_probability', [
+            child])  # Importing a class for this is probably not the optimal way to do this, maybe try to find an alternative
         if child.data == 'calc_next':
             rel_quant.extend(SemanticsNext(model, prob_formula, n))
             rel_quant.extend(SemanticsRewNext(model, formula_duplicate, n))
@@ -1948,7 +1958,6 @@ def check_result(mdp_model):
         return False, li_a, s.statistics(), z3time
 
 
-
 def main_smt_encoding(model, formula_initial, formula):
     global nos_of_subformula
     list_of_states = []
@@ -1984,7 +1993,7 @@ def main_smt_encoding(model, formula_initial, formula):
         print("Encoded non-quantified formula...")
         smt_end_time = time.process_time() - starttime
 
-        print("Time to encode in seconds: " + str(round(smt_end_time,2)))
+        print("Time to encode in seconds: " + str(round(smt_end_time, 2)))
         print("Checking...")
         res, li_a, statis, z3time = check_result(model)
         if res:
@@ -2073,8 +2082,6 @@ def main_smt_encoding(model, formula_initial, formula):
         print("Number of formula checked: " + str(nos_of_subformula))
 
 
-
-
 def rebuild_exact_value_model(initial_mod):
     file_str = ""
     file_str += "builder = stormpy.ExactSparseMatrixBuilder(rows=0, columns=0, entries=0, force_dimensions=False, has_custom_row_grouping=True, row_groups=0)\n"
@@ -2091,11 +2098,25 @@ def rebuild_exact_value_model(initial_mod):
     file_str += "\ntransition_matrix = builder.build()\n"
     loc = {}
     exec(file_str, {"stormpy": stormpy}, loc)
+    # creating new transition matrix
     transition_matrix = loc["transition_matrix"]
+    # creating new label model
     state_labeling = initial_mod.labeling
-    reward_models = {} ##TODO: Rebuild this to be exact
-    components = stormpy.SparseExactModelComponents(transition_matrix=transition_matrix, state_labeling=state_labeling, reward_models=reward_models)
+    # creating new rewards model
+    reward = {}
+    reward_models = initial_mod.reward_models.get('').state_rewards
+    state_rewards = []
+    for i in reward_models:
+        va = RealVal(i).as_fraction().limit_denominator(10000)
+        state_rewards.append(stormpy.Rational(va.numerator)/ stormpy.Rational(
+                    va.denominator))
+
+    reward[""] = stormpy.storage.SparseExactRewardModel(optional_state_reward_vector=state_rewards)
+
+    components = stormpy.SparseExactModelComponents(transition_matrix=transition_matrix, state_labeling=state_labeling,
+                                                    reward_models=reward)
     mdp = stormpy.storage.SparseExactMdp(components)
+    red = mdp.reward_models.get('')
     return mdp
 
 
@@ -2114,12 +2135,12 @@ if __name__ == '__main__':
     initial_prism_program = stormpy.parse_prism_program(path)
     initial_model = stormpy.build_model(initial_prism_program)
     print("Total number of states: " + str(len(initial_model.states)))
-    #print(initial_model.reward_models.keys()) #This is for testing
-    #print(initial_model.reward_models.get("").get_state_reward(4)) #This too
+    # print(initial_model.reward_models.keys()) #This is for testing
+    # print(initial_model.reward_models.get("").get_state_reward(4)) #This too
     tar = 0
     ac = 0
 
-    #initial_model = rebuild_exact_value_model(initial_model)
+    initial_model = rebuild_exact_value_model(initial_model)
 
     for state in initial_model.states:
         for action in state.actions:
@@ -2137,5 +2158,3 @@ if __name__ == '__main__':
     s = Solver()
 
     main_smt_encoding(initial_model, parsed_formula_initial, formula)
-
-
