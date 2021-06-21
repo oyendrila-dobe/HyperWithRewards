@@ -803,7 +803,7 @@ def SemanticsFuture(model, formula_duplicate, n):
             for cs in combined_succ:
                 f = 0
                 prob_succ = 'prob'
-                # prob_succ1 = 'prob'
+
                 holds_succ = 'holds'
                 d_current = 'd'
                 d_succ = 'd'
@@ -892,7 +892,7 @@ def SemanticsRewFuture(model, formula_duplicate, n):
     index_of_phi1 = list_of_subformula.index(phi1)
     index_of_phi = list_of_subformula.index(formula_duplicate)
     index_of_phi_prob = list_of_subformula.index(prob_formula)
-    rel_quant.extend(Semantics(model, phi1, n))
+    rel_quant.extend(Semantics(model, phi1, n)) # have already done this in future, need to figure out a simple code to get just the relevant quantifiers
     rel_quant.append(relevant_quantifier)
     r_state = [0 for ind in range(n)]
 
@@ -924,16 +924,17 @@ def SemanticsRewFuture(model, formula_duplicate, n):
         prob_phi = 'prob'
         prob_phi += str_r_state + '_' + str(index_of_phi_prob)
         add_to_variable_list(prob_phi)
-        rew_phi = 'prob'
+        rew_phi = 'rew' #instead of "prob"
         rew_phi += str_r_state + '_' + str(index_of_phi)
         add_to_variable_list(rew_phi)
         # new_prob_const = listOfReals[list_of_reals.index(prob_phi)] >= float(0)
+        new_inf = fpToReal(fpPlusInfinity(FPSort(8, 24)))
         first_implies = And(Implies(listOfBools[list_of_bools.index(holds1)],
                                     (listOfReals[list_of_reals.index(rew_phi)] == float(
                                         reward_model.get_state_reward(r_state[relevant_quantifier - 1])))),
                             Implies(Not(listOfReals[list_of_reals.index(prob_phi)] == float(1)),
-                                    listOfReals[list_of_reals.index(rew_phi)] == float(
-                                        -1)))  # How do we handle the case where prob != 1? TBD
+                                    listOfReals[list_of_reals.index(rew_phi)] == new_inf))
+                                    #float(fpPlusInfinity()  # How do we handle the case where prob != 1? TBD
         nos_of_subformula += 2  # I'm not sure how we are counting subformulas. Need to verify.
 
         dicts = []
@@ -968,9 +969,9 @@ def SemanticsRewFuture(model, formula_duplicate, n):
 
             for cs in combined_succ:
                 f = 0
-                prob_succ = 'prob'
+                # prob_succ = 'prob'
                 # prob_succ1 = 'prob'
-                holds_succ = 'holds'  # Do we actually use this?
+                # holds_succ = 'holds'  # Do we actually use this? - Nope
                 rew_succ = 'rew'
                 p_first = True
                 prod_left_part = None
@@ -978,8 +979,8 @@ def SemanticsRewFuture(model, formula_duplicate, n):
                     if l in rel_quant:
                         space = cs[f].find(' ')
                         succ_state = cs[f - 1][0:space]
-                        prob_succ += '_' + succ_state
-                        holds_succ += '_' + succ_state
+                        # prob_succ += '_' + succ_state
+                        # holds_succ += '_' + succ_state
                         rew_succ += '_' + succ_state
                         if p_first:
                             prod_left_part = RealVal(cs[f - 1][space + 1:]).as_fraction()
@@ -989,8 +990,8 @@ def SemanticsRewFuture(model, formula_duplicate, n):
                         f += 1
 
                     else:
-                        prob_succ += '_' + str(0)
-                        holds_succ += '_' + str(0)
+                        # prob_succ += '_' + str(0)
+                        # holds_succ += '_' + str(0)
                         rew_succ += '_' + str(0)
                         if p_first:
                             prod_left_part = RealVal(1).as_fraction()
@@ -998,12 +999,13 @@ def SemanticsRewFuture(model, formula_duplicate, n):
                         else:
                             prod_left_part *= RealVal(1).as_fraction()
 
-                prob_succ += '_' + str(index_of_phi_prob)
-                add_to_variable_list(prob_succ)
-                holds_succ += '_' + str(index_of_phi1)
-                add_to_variable_list(holds_succ)
+                # prob_succ += '_' + str(index_of_phi_prob)
+                # add_to_variable_list(prob_succ)
+                # holds_succ += '_' + str(index_of_phi1)
+                # add_to_variable_list(holds_succ)
                 rew_succ += '_' + str(index_of_phi)
-                prod_left_part *= listOfReals[list_of_reals.index(prob_succ)]
+                add_to_variable_list(rew_succ)
+                prod_left_part *= listOfReals[list_of_reals.index(rew_succ)]
 
                 if first:
                     prod_left = prod_left_part
@@ -1829,7 +1831,7 @@ def Semantics(model, formula_duplicate, n):
                     else:
                         k -= 1
                 if flago and (i + 1) in rel_quant and (k) >= 0 and index[k] < (len(
-                        model.states) - 1):  # special case when the current quantifier is relevant but it has reached the end of model states. SO we increase the previous quantifier value and continue with current quantifier
+                        model.states) - 1):  # special case when the current quantifier is relevant but it has reached the end of model states. So we increase the previous quantifier value and continue with current quantifier
                     index[i - 1] += 1
                     r_state[i - 1] += 1
                     flag = True
@@ -1849,9 +1851,7 @@ def Truth(model, formula_initial, combined_list_of_states, n):
     list_of_AV = []  # will have the OR, AND according to the quantifier in that index in the formula
 
     while len(formula_initial.children) > 0 and type(formula_initial.children[0]) == Token:
-        if formula_initial.data in ['exist_scheduler', 'forall_scheduler']:
-            formula_initial = formula_initial.children[1]
-        elif formula_initial.data == 'exist':
+        if formula_initial.data == 'exist':
             list_of_AV.append('V')
             formula_initial = formula_initial.children[1]
         elif formula_initial.data == 'forall':
@@ -1886,12 +1886,12 @@ def Truth(model, formula_initial, combined_list_of_states, n):
         list_of_holds = copy.deepcopy(list_of_holds_replace)
         list_of_holds_replace.clear()
     s.add(list_of_holds[0])
-
     print("Encoded quantifiers...")
 
 
 def add_to_subformula_list(formula_phi):  # add as you go any new subformula part as needed
-    if formula_phi.data in ['exist_scheduler', 'forall_scheduler', 'exist', 'forall']:
+    #if formula_phi.data in ['exist_scheduler', 'forall_scheduler', 'exist', 'forall']:
+    if formula_phi.data in ['exist', 'forall']:
         formula_phi = formula_phi.children[1]
         add_to_subformula_list(formula_phi)
     elif formula_phi.data in ['and_op', 'less_prob', 'greater_prob', 'add_prob', 'minus_prob', 'mul_prob',
@@ -1933,7 +1933,7 @@ def add_to_variable_list(name):
     if name[0] == 'h' and not name.startswith('holdsToInt') and name not in list_of_bools:
         list_of_bools.append(name)
         listOfBools.append(Bool(name))
-    elif name[0] in ['p', 'd', 'r'] or name.startswith('holdsToInt') and name not in list_of_reals:
+    elif (name[0] in ['p', 'd', 'r'] or name.startswith('holdsToInt')) and name not in list_of_reals:
         list_of_reals.append(name)
         listOfReals.append(Real(name))
     elif name[0] == 'a' and name not in list_of_ints:
@@ -1967,119 +1967,151 @@ def main_smt_encoding(model, formula_initial, formula):
         name = "a_" + str(state.id)  # a_1 means action for state 1
         add_to_variable_list(name)
         for action in state.actions:
-            list_of_eqns.append(listOfInts[list_of_ints.index(name)] == int(action.id))
+             list_of_eqns.append(listOfInts[list_of_ints.index(name)] == int(action.id))
         if len(list_of_eqns) == 1:
-            s.add(list_of_eqns[0])
+             s.add(list_of_eqns[0])
         else:
-            s.add(Or([par for par in list_of_eqns]))
+             s.add(Or([par for par in list_of_eqns]))
         nos_of_subformula += 1
     print("Encoded actions in the MDP...")
     n_of_state_quantifier = 0
     formula_duplicate = formula_initial
     while len(formula_duplicate.children) > 0 and type(formula_duplicate.children[0]) == Token:
-        if formula_duplicate.data in ['exist_scheduler', 'forall_scheduler']:
-            formula_duplicate = formula_duplicate.children[1]
-        elif formula_duplicate.data in ['exist', 'forall']:
+        # if formula_duplicate.data in ['exist_scheduler', 'forall_scheduler']:
+        #     formula_duplicate = formula_duplicate.children[1]
+        if formula_duplicate.data in ['exist', 'forall']:
             n_of_state_quantifier += 1
+            formula_duplicate = formula_duplicate.children[1]
+        else:
             formula_duplicate = formula_duplicate.children[1]
     for state in model.states:
         list_of_states.append(state.id)
     combined_list_of_states = list(itertools.product(list_of_states, repeat=n_of_state_quantifier))
-    if formula_initial.data == 'exist_scheduler':
-        add_to_subformula_list(formula_initial)
-        Truth(model, formula_initial, combined_list_of_states, n_of_state_quantifier)
-
-        Semantics(model, formula_duplicate, n_of_state_quantifier)
-        print("Encoded non-quantified formula...")
-        smt_end_time = time.process_time() - starttime
-
-        print("Time to encode in seconds: " + str(round(smt_end_time, 2)))
-        print("Checking...")
-        res, li_a, statis, z3time = check_result(model)
-        if res:
-            print("The property HOLDS!\n")
-            print("\nThe actions at the corresponding states of the witness are:")
-            for i in range(0, len(model.states)):
-                print("State " + str(i) + ' = ' + str(li_a[i]))
-            print("\n")
-        else:
-            print("The property DOES NOT hold!")
-
-        print("z3 statistics:")
-        print(statis)
-        print("\nTime to encode in seconds: " + str(round(smt_end_time, 2)))
-        print("Time required by z3 in seconds: " + str(round(z3time, 2)))
+    add_to_subformula_list(formula_initial)
+    Truth(model, formula_initial, combined_list_of_states, n_of_state_quantifier)
+    Semantics(model, formula_duplicate, n_of_state_quantifier)
+    print("Encoded non-quantified formula...")
+    smt_end_time = time.process_time() - starttime
+    print("Time to encode in seconds: " + str(round(smt_end_time, 2)))
+    print("Checking...")
+    res, li_a, statis, z3time = check_result(model)
+    if res:
+        print("The property HOLDS!\n")
+        print("\nThe actions at the corresponding states of the witness are:")
+        for i in range(0, len(model.states)):
+            print("State " + str(i) + ' = ' + str(li_a[i]))
         print("\n")
-        print("Number of variables: " + str(len(list_of_ints) + len(list_of_reals) + len(list_of_bools)))
-        print("Number of formula checked: " + str(nos_of_subformula))
-
-    elif formula_initial.data == 'forall_scheduler':
-        new_formula = ''
-        i = 0
-        first = True
-        while i < len(formula):
-
-            if formula[i] == 'E':
-                if formula[i + 1] == 'S':
-                    new_formula += formula[i] + formula[i + 1]
-                    i += 2
-                elif formula[i + 1] == ' ':
-                    new_formula += 'A' + formula[i + 1]
-                    i += 2
-            elif formula[i] == 'A':
-                if formula[i + 1] == 'S':
-                    new_formula += 'E' + formula[i + 1]
-                    i += 2
-                elif formula[i + 1] == ' ':
-                    new_formula += 'E' + formula[i + 1]
-                    i += 2
-            else:
-                if first and formula[i - 1] == ' ' and formula[i - 2] == '.':
-                    if formula[i] == '~':
-                        # added this to avoid double negation for exist. Might want to remove the extra brace around
-                        # the formula due to previous not.
-                        first = False
-                        i += 1
-                        continue
-                    else:
-                        new_formula += '~'
-                    first = False
-                new_formula += formula[i]
-                i += 1
-        new_parsed_formula = parser.parse(new_formula)
-        formula_duplicate = new_parsed_formula
-        n_of_state_quantifier = 0
-        while len(formula_duplicate.children) > 0 and type(formula_duplicate.children[0]) == Token:
-            if formula_duplicate.data in ['exist_scheduler', 'forall_scheduler']:
-                formula_duplicate = formula_duplicate.children[1]
-            elif formula_duplicate.data in ['exist', 'forall']:
-                n_of_state_quantifier += 1
-                formula_duplicate = formula_duplicate.children[1]
-        add_to_subformula_list(new_parsed_formula)
-        Truth(model, new_parsed_formula, combined_list_of_states, n_of_state_quantifier)
-        Semantics(model, formula_duplicate, n_of_state_quantifier)
-        print("Encoded non-quantified formula...")
-        smt_end_time = time.process_time() - starttime
-
-        print("Time to encode in seconds: " + str(round(smt_end_time, 2)))
-        print("Checking...")
-        res, li_a, statis, z3time = check_result(model)
-        if res:
-            print("The property DOES NOT hold!")
-            print("\nThe actions at the corresponding states of a counterexample are:")
-            for i in range(0, len(model.states)):
-                print("State " + str(i) + ' = ' + str(li_a[i]))
-            print("\n")
-        else:
-            print("The property HOLDS!")
-
-        print("z3 statistics:")
-        print(statis)
-        print("\nTime to encode in seconds: " + str(round(smt_end_time, 2)))
-        print("Time required by z3 in seconds: " + str(round(z3time, 2)))
+    else:
+        print("The property DOES NOT hold!")
+        print("\nThe actions at the corresponding states of the witness are:")
+        for i in range(0, len(model.states)):
+            print("State " + str(i) + ' = ' + str(li_a[i]))
         print("\n")
-        print("Number of variables: " + str(len(list_of_ints) + len(list_of_reals) + len(list_of_bools)))
-        print("Number of formula checked: " + str(nos_of_subformula))
+
+    print("z3 statistics:")
+    print(statis)
+    print("\nTime to encode in seconds: " + str(round(smt_end_time, 2)))
+    print("Time required by z3 in seconds: " + str(round(z3time, 2)))
+    print("\n")
+    print("Number of variables: " + str(len(list_of_ints) + len(list_of_reals) + len(list_of_bools)))
+    print("Number of formula checked: " + str(nos_of_subformula))
+
+
+    # if formula_initial.data == 'exist_scheduler':
+    #     add_to_subformula_list(formula_initial)
+    #     Truth(model, formula_initial, combined_list_of_states, n_of_state_quantifier)
+    #
+    #     Semantics(model, formula_duplicate, n_of_state_quantifier)
+    #     print("Encoded non-quantified formula...")
+    #     smt_end_time = time.process_time() - starttime
+    #
+    #     print("Time to encode in seconds: " + str(round(smt_end_time, 2)))
+    #     print("Checking...")
+    #     res, li_a, statis, z3time = check_result(model)
+    #     if res:
+    #         print("The property HOLDS!\n")
+    #         print("\nThe actions at the corresponding states of the witness are:")
+    #         for i in range(0, len(model.states)):
+    #             print("State " + str(i) + ' = ' + str(li_a[i]))
+    #         print("\n")
+    #     else:
+    #         print("The property DOES NOT hold!")
+    #
+    #     print("z3 statistics:")
+    #     print(statis)
+    #     print("\nTime to encode in seconds: " + str(round(smt_end_time, 2)))
+    #     print("Time required by z3 in seconds: " + str(round(z3time, 2)))
+    #     print("\n")
+    #     print("Number of variables: " + str(len(list_of_ints) + len(list_of_reals) + len(list_of_bools)))
+    #     print("Number of formula checked: " + str(nos_of_subformula))
+    #
+    # elif formula_initial.data == 'forall_scheduler':
+    #     new_formula = ''
+    #     i = 0
+    #     first = True
+    #     while i < len(formula):
+    #
+    #         if formula[i] == 'E':
+    #             if formula[i + 1] == 'S':
+    #                 new_formula += formula[i] + formula[i + 1]
+    #                 i += 2
+    #             elif formula[i + 1] == ' ':
+    #                 new_formula += 'A' + formula[i + 1]
+    #                 i += 2
+    #         elif formula[i] == 'A':
+    #             if formula[i + 1] == 'S':
+    #                 new_formula += 'E' + formula[i + 1]
+    #                 i += 2
+    #             elif formula[i + 1] == ' ':
+    #                 new_formula += 'E' + formula[i + 1]
+    #                 i += 2
+    #         else:
+    #             if first and formula[i - 1] == ' ' and formula[i - 2] == '.':
+    #                 if formula[i] == '~':
+    #                     # added this to avoid double negation for exist. Might want to remove the extra brace around
+    #                     # the formula due to previous not.
+    #                     first = False
+    #                     i += 1
+    #                     continue
+    #                 else:
+    #                     new_formula += '~'
+    #                 first = False
+    #             new_formula += formula[i]
+    #             i += 1
+    #     new_parsed_formula = parser.parse(new_formula)
+    #     formula_duplicate = new_parsed_formula
+    #     n_of_state_quantifier = 0
+    #     while len(formula_duplicate.children) > 0 and type(formula_duplicate.children[0]) == Token:
+    #         if formula_duplicate.data in ['exist_scheduler', 'forall_scheduler']:
+    #             formula_duplicate = formula_duplicate.children[1]
+    #         elif formula_duplicate.data in ['exist', 'forall']:
+    #             n_of_state_quantifier += 1
+    #             formula_duplicate = formula_duplicate.children[1]
+    #     add_to_subformula_list(new_parsed_formula)
+    #     Truth(model, new_parsed_formula, combined_list_of_states, n_of_state_quantifier)
+    #     Semantics(model, formula_duplicate, n_of_state_quantifier)
+    #     print("Encoded non-quantified formula...")
+    #     smt_end_time = time.process_time() - starttime
+    #
+    #     print("Time to encode in seconds: " + str(round(smt_end_time, 2)))
+    #     print("Checking...")
+    #     res, li_a, statis, z3time = check_result(model)
+    #     if res:
+    #         print("The property DOES NOT hold!")
+    #         print("\nThe actions at the corresponding states of a counterexample are:")
+    #         for i in range(0, len(model.states)):
+    #             print("State " + str(i) + ' = ' + str(li_a[i]))
+    #         print("\n")
+    #     else:
+    #         print("The property HOLDS!")
+    #
+    #     print("z3 statistics:")
+    #     print(statis)
+    #     print("\nTime to encode in seconds: " + str(round(smt_end_time, 2)))
+    #     print("Time required by z3 in seconds: " + str(round(z3time, 2)))
+    #     print("\n")
+    #     print("Number of variables: " + str(len(list_of_ints) + len(list_of_reals) + len(list_of_bools)))
+    #     print("Number of formula checked: " + str(nos_of_subformula))
 
 
 def rebuild_exact_value_model(initial_mod):
@@ -2108,15 +2140,14 @@ def rebuild_exact_value_model(initial_mod):
     state_rewards = []
     for i in reward_models:
         va = RealVal(i).as_fraction().limit_denominator(10000)
-        state_rewards.append(stormpy.Rational(va.numerator)/ stormpy.Rational(
-                    va.denominator))
+        state_rewards.append(stormpy.Rational(va.numerator) / stormpy.Rational(
+            va.denominator))
 
     reward[""] = stormpy.storage.SparseExactRewardModel(optional_state_reward_vector=state_rewards)
 
     components = stormpy.SparseExactModelComponents(transition_matrix=transition_matrix, state_labeling=state_labeling,
                                                     reward_models=reward)
     mdp = stormpy.storage.SparseExactMdp(components)
-    red = mdp.reward_models.get('')
     return mdp
 
 
@@ -2135,6 +2166,7 @@ if __name__ == '__main__':
     initial_prism_program = stormpy.parse_prism_program(path)
     initial_model = stormpy.build_model(initial_prism_program)
     print("Total number of states: " + str(len(initial_model.states)))
+
     # print(initial_model.reward_models.keys()) #This is for testing
     # print(initial_model.reward_models.get("").get_state_reward(4)) #This too
     tar = 0
