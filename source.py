@@ -1944,10 +1944,15 @@ def add_to_variable_list(name):
 def check_result(mdp_model):
     starting = time.process_time()
     t = s.check()
+    for c in s.assertions():        #print out constraints for testing
+        print (c)                   #
     z3time = time.process_time() - starting
     li_a = None
     if t == sat:
         model = s.model()
+        for d in model.decls():     #print variables, also for testing
+            print(d.name)           #
+            print(model[d])         #
         li_a = [None] * len(mdp_model.states)
         for li in model:
             if li.name()[0] == 'a':
@@ -1998,14 +2003,14 @@ def main_smt_encoding(model, formula_initial, formula):
     if res:
         print("The property HOLDS!\n")
         print("\nThe actions at the corresponding states of the witness are:")
-        for i in range(0, len(model.states)):
-            print("State " + str(i) + ' = ' + str(li_a[i]))
+        #for i in range(0, len(model.states)):
+        #    print("State " + str(i) + ' = ' + str(li_a[i]))
         print("\n")
     else:
         print("The property DOES NOT hold!")
         print("\nThe actions at the corresponding states of the witness are:")
-        for i in range(0, len(model.states)):
-            print("State " + str(i) + ' = ' + str(li_a[i]))
+        #for i in range(0, len(model.states)):
+        #    print("State " + str(i) + ' = ' + str(li_a[i]))
         print("\n")
 
     print("z3 statistics:")
@@ -2186,7 +2191,7 @@ if __name__ == '__main__':
     parser = Lark(turtle_grammar)
     formula = sys.argv[2]
     parsed_formula_initial = parser.parse(formula)
-    print(parsed_formula_initial)
+    #print(parsed_formula_initial) #Also testing
     s = Solver()
 
     main_smt_encoding(initial_model, parsed_formula_initial, formula)
