@@ -776,97 +776,86 @@ def SemanticsFuture(model, formula_duplicate, n):
             dicts.append(dict_of_acts[r_state[l - 1]])
         combined_acts = list(itertools.product(*dicts))
 
-        for ca in combined_acts:
-            name = 'a_' + str(r_state[rel_quant[0] - 1])
-            add_to_variable_list(name)
-            act_str = listOfInts[list_of_ints.index(name)] == int(ca[0])
-            if len(rel_quant) > 1:
-                for l in range(2, len(rel_quant) + 1):
-                    name = 'a_' + str(rel_quant[l - 1] - 1)
-                    add_to_variable_list(name)
-                    act_str = And(act_str, listOfInts[list_of_ints.index(name)] == int(ca[l - 1]))
+        implies_precedent = Not(listOfBools[list_of_bools.index(holds1)])
+        nos_of_subformula += 1
 
-            implies_precedent = And(Not(listOfBools[list_of_bools.index(holds1)]), act_str)
+        dicts = []
+        g = 0
+        for l in rel_quant:
+            dicts.append(dict_of_acts_tran[str(r_state[l - 1]) + " " + str(combined_acts[0][g])])
+            g += 1
+        combined_succ = list(itertools.product(*dicts))
+
+        first = True
+        prod_left = None
+        list_of_ors = []
+
+        for cs in combined_succ:
+            f = 0
+            prob_succ = 'prob'
+            holds_succ = 'holds'
+            d_current = 'd'
+            d_succ = 'd'
+            p_first = True
+            prod_left_part = None
+            for l in range(1, n + 1):
+                if l in rel_quant:
+                    space = cs[f].find(' ')
+                    succ_state = cs[f - 1][0:space]
+                    prob_succ += '_' + succ_state
+                    holds_succ += '_' + succ_state
+                    d_succ += '_' + succ_state
+                    if p_first:
+                        prod_left_part = RealVal(cs[f - 1][space + 1:]).as_fraction()
+                        p_first = False
+                    else:
+                        prod_left_part *= RealVal(cs[f - 1][space + 1:]).as_fraction()
+                    f += 1
+
+                else:
+                    prob_succ += '_' + str(0)
+                    holds_succ += '_' + str(0)
+                    d_succ += '_' + str(0)
+                    if p_first:
+                        prod_left_part = RealVal(1).as_fraction()
+                        p_first = False
+                    else:
+                        prod_left_part *= RealVal(1).as_fraction()
+                d_current += '_' + str(r_state[l - 1])
+
+            prob_succ += '_' + str(index_of_phi)
+            add_to_variable_list(prob_succ)
+            holds_succ += '_' + str(index_of_phi1)
+            add_to_variable_list(holds_succ)
+            d_current += '_' + str(index_of_phi1)
+            add_to_variable_list(d_current)
+            d_succ += '_' + str(index_of_phi1)
+            add_to_variable_list(d_succ)
+            prod_left_part *= listOfReals[list_of_reals.index(prob_succ)]
+
+            if first:
+                prod_left = prod_left_part
+                first = False
+            else:
+                prod_left += prod_left_part
+            nos_of_subformula += 1
+
+            list_of_ors.append(Or(listOfBools[list_of_bools.index(holds_succ)],
+                                  listOfReals[list_of_reals.index(d_current)] > listOfReals[
+                                      list_of_reals.index(d_succ)]))
+
             nos_of_subformula += 2
 
-            dicts = []
-            g = 0
-            for l in rel_quant:
-                dicts.append(dict_of_acts_tran[str(r_state[l - 1]) + " " + str(ca[g])])
-                g += 1
-            combined_succ = list(itertools.product(*dicts))
-
-            first = True
-            prod_left = None
-            list_of_ors = []
-
-            for cs in combined_succ:
-                f = 0
-                prob_succ = 'prob'
-
-                holds_succ = 'holds'
-                d_current = 'd'
-                d_succ = 'd'
-                p_first = True
-                prod_left_part = None
-                for l in range(1, n + 1):
-                    if l in rel_quant:
-                        space = cs[f].find(' ')
-                        succ_state = cs[f - 1][0:space]
-                        prob_succ += '_' + succ_state
-                        holds_succ += '_' + succ_state
-                        d_succ += '_' + succ_state
-                        if p_first:
-                            prod_left_part = RealVal(cs[f - 1][space + 1:]).as_fraction()
-                            p_first = False
-                        else:
-                            prod_left_part *= RealVal(cs[f - 1][space + 1:]).as_fraction()
-                        f += 1
-
-                    else:
-                        prob_succ += '_' + str(0)
-                        holds_succ += '_' + str(0)
-                        d_succ += '_' + str(0)
-                        if p_first:
-                            prod_left_part = RealVal(1).as_fraction()
-                            p_first = False
-                        else:
-                            prod_left_part *= RealVal(1).as_fraction()
-                    d_current += '_' + str(r_state[l - 1])
-
-                prob_succ += '_' + str(index_of_phi)
-                add_to_variable_list(prob_succ)
-                holds_succ += '_' + str(index_of_phi1)
-                add_to_variable_list(holds_succ)
-                d_current += '_' + str(index_of_phi1)
-                add_to_variable_list(d_current)
-                d_succ += '_' + str(index_of_phi1)
-                add_to_variable_list(d_succ)
-                prod_left_part *= listOfReals[list_of_reals.index(prob_succ)]
-
-                if first:
-                    prod_left = prod_left_part
-                    first = False
-                else:
-                    prod_left += prod_left_part
-                nos_of_subformula += 1
-
-                list_of_ors.append(Or(listOfBools[list_of_bools.index(holds_succ)],
-                                      listOfReals[list_of_reals.index(d_current)] > listOfReals[
-                                          list_of_reals.index(d_succ)]))
-
-                nos_of_subformula += 2
-
-            implies_antecedent_and1 = listOfReals[list_of_reals.index(prob_phi)] == prod_left
-            nos_of_subformula += 1
-            prod_right_or = Or([par for par in list_of_ors])
-            nos_of_subformula += 1
-            implies_antecedent_and2 = Implies(listOfReals[list_of_reals.index(prob_phi)] > 0, prod_right_or)
-            nos_of_subformula += 1
-            implies_antecedent = And(implies_antecedent_and1, implies_antecedent_and2)
-            nos_of_subformula += 1
-            s.add(And(first_implies, Implies(implies_precedent, implies_antecedent)))
-            nos_of_subformula += 1
+        implies_antecedent_and1 = listOfReals[list_of_reals.index(prob_phi)] == prod_left
+        nos_of_subformula += 1
+        prod_right_or = Or([par for par in list_of_ors])
+        nos_of_subformula += 1
+        implies_antecedent_and2 = Implies(listOfReals[list_of_reals.index(prob_phi)] > 0, prod_right_or)
+        nos_of_subformula += 1
+        implies_antecedent = And(implies_antecedent_and1, implies_antecedent_and2)
+        nos_of_subformula += 1
+        s.add(And(first_implies, Implies(implies_precedent, implies_antecedent)))
+        nos_of_subformula += 1
 
         while i >= 0 and (index[i] == (len(model.states) - 1) or (i + 1) not in rel_quant):
             r_state[i] = 0
@@ -892,11 +881,11 @@ def SemanticsRewFuture(model, formula_duplicate, n):
     index_of_phi1 = list_of_subformula.index(phi1)
     index_of_phi = list_of_subformula.index(formula_duplicate)
     index_of_phi_prob = list_of_subformula.index(prob_formula)
-    rel_quant.extend(Semantics(model, phi1, n)) # have already done this in future, need to figure out a simple code to get just the relevant quantifiers
-    if relevant_quantifier not in rel_quant:
-        rel_quant.append(relevant_quantifier)
+    # rel_quant.extend(Semantics(model, phi1, n))  This have already been added when parsing the future operator
+    rel_quant.append(relevant_quantifier)
     r_state = [0 for ind in range(n)]
 
+    # OD: will try to remove action as a last resort
     dict_of_acts = dict()
     dict_of_acts_tran = dict()
     for state in model.states:
@@ -925,101 +914,80 @@ def SemanticsRewFuture(model, formula_duplicate, n):
         prob_phi = 'prob'
         prob_phi += str_r_state + '_' + str(index_of_phi_prob)
         add_to_variable_list(prob_phi)
-        rew_phi = 'rew' #instead of "prob"
+        rew_phi = 'rew'  # instead of "prob"
         rew_phi += str_r_state + '_' + str(index_of_phi)
         add_to_variable_list(rew_phi)
-        # new_prob_const = listOfReals[list_of_reals.index(prob_phi)] >= float(0)
+
         new_inf = fpToReal(fpPlusInfinity(FPSort(8, 24)))
         first_implies = And(Implies(listOfBools[list_of_bools.index(holds1)],
                                     (listOfReals[list_of_reals.index(rew_phi)] == float(
                                         reward_model.get_state_reward(r_state[relevant_quantifier - 1])))),
                             Implies(Not(listOfReals[list_of_reals.index(prob_phi)] == float(1)),
                                     listOfReals[list_of_reals.index(rew_phi)] == new_inf))
-                                    #float(fpPlusInfinity()  # How do we handle the case where prob != 1? TBD
-        nos_of_subformula += 2  # I'm not sure how we are counting subformulas. Need to verify.
+        # float(fpPlusInfinity()  # How do we handle the case where prob != 1? TBD
+        nos_of_subformula += 2  # I'm not sure how we are counting subformulas. Need to verify. OD: we can change these later, don't worry about them now
 
         dicts = []
         for l in rel_quant:
             dicts.append(dict_of_acts[r_state[l - 1]])
         combined_acts = list(itertools.product(*dicts))
 
-        for ca in combined_acts:
-            name = 'a_' + str(r_state[rel_quant[0] - 1])
-            add_to_variable_list(name)
-            act_str = listOfInts[list_of_ints.index(name)] == int(ca[0])
-            if len(rel_quant) > 1:
-                for l in range(2, len(rel_quant) + 1):
-                    name = 'a_' + str(rel_quant[l - 1] - 1)
-                    add_to_variable_list(name)
-                    act_str = And(act_str, listOfInts[list_of_ints.index(name)] == int(ca[l - 1]))
+        implies_precedent = And(listOfReals[list_of_reals.index(prob_phi)] == float(1),
+                                    Not(listOfBools[list_of_bools.index(holds1)]))
+        nos_of_subformula += 2  # Here too
 
-            implies_precedent = And(listOfReals[list_of_reals.index(prob_phi)] == float(1),
-                                    Not(listOfBools[list_of_bools.index(holds1)]), act_str)
-            nos_of_subformula += 3  # Here too
+        dicts = []
+        g = 0
+        for l in rel_quant:
+            dicts.append(dict_of_acts_tran[str(r_state[l - 1]) + " " + str(combined_acts[0][g])])
+            g += 1
+        combined_succ = list(itertools.product(*dicts))
 
-            dicts = []
-            g = 0
-            for l in rel_quant:
-                dicts.append(dict_of_acts_tran[str(r_state[l - 1]) + " " + str(ca[g])])
-                g += 1
-            combined_succ = list(itertools.product(*dicts))
+        first = True
+        prod_left = None
 
-            first = True
-            prod_left = None
-            list_of_ors = []
 
-            for cs in combined_succ:
-                f = 0
-                # prob_succ = 'prob'
-                # prob_succ1 = 'prob'
-                # holds_succ = 'holds'  # Do we actually use this? - Nope
-                rew_succ = 'rew'
-                p_first = True
-                prod_left_part = None
-                for l in range(1, n + 1):
-                    if l in rel_quant:
-                        space = cs[f].find(' ')
-                        succ_state = cs[f - 1][0:space]
-                        # prob_succ += '_' + succ_state
-                        # holds_succ += '_' + succ_state
-                        rew_succ += '_' + succ_state
-                        if p_first:
-                            prod_left_part = RealVal(cs[f - 1][space + 1:]).as_fraction()
-                            p_first = False
-                        else:
-                            prod_left_part *= RealVal(cs[f - 1][space + 1:]).as_fraction()
-                        f += 1
-
+        for cs in combined_succ:
+            f = 0
+            rew_succ = 'rew'
+            p_first = True
+            prod_left_part = None
+            for l in range(1, n + 1):
+                if l in rel_quant:
+                    space = cs[f].find(' ')
+                    succ_state = cs[f - 1][0:space]
+                    rew_succ += '_' + succ_state
+                    if p_first:
+                        prod_left_part = RealVal(cs[f - 1][space + 1:]).as_fraction()
+                        p_first = False
                     else:
-                        # prob_succ += '_' + str(0)
-                        # holds_succ += '_' + str(0)
-                        rew_succ += '_' + str(0)
-                        if p_first:
-                            prod_left_part = RealVal(1).as_fraction()
-                            p_first = False
-                        else:
-                            prod_left_part *= RealVal(1).as_fraction()
+                        prod_left_part *= RealVal(cs[f - 1][space + 1:]).as_fraction()
+                    f += 1
 
-                # prob_succ += '_' + str(index_of_phi_prob)
-                # add_to_variable_list(prob_succ)
-                # holds_succ += '_' + str(index_of_phi1)
-                # add_to_variable_list(holds_succ)
-                rew_succ += '_' + str(index_of_phi)
-                add_to_variable_list(rew_succ)
-                prod_left_part *= listOfReals[list_of_reals.index(rew_succ)]
-
-                if first:
-                    prod_left = prod_left_part
-                    first = False
                 else:
-                    prod_left += prod_left_part
-                nos_of_subformula += 1
+                    rew_succ += '_' + str(0)
+                    if p_first:
+                        prod_left_part = RealVal(1).as_fraction()
+                        p_first = False
+                    else:
+                        prod_left_part *= RealVal(1).as_fraction()
 
-            implies_antecedent = listOfReals[list_of_reals.index(rew_phi)] == (
-                    float(reward_model.get_state_reward(r_state[relevant_quantifier - 1])) + prod_left)
+            rew_succ += '_' + str(index_of_phi)
+            add_to_variable_list(rew_succ)
+            prod_left_part *= listOfReals[list_of_reals.index(rew_succ)]
+
+            if first:
+                prod_left = prod_left_part
+                first = False
+            else:
+                prod_left += prod_left_part
             nos_of_subformula += 1
-            s.add(And(first_implies, Implies(implies_precedent, implies_antecedent)))
-            nos_of_subformula += 1
+
+        implies_antecedent = listOfReals[list_of_reals.index(rew_phi)] == (
+                float(reward_model.get_state_reward(r_state[relevant_quantifier - 1])) + prod_left)  # why are we adding reward for just one state, might have to generalize this later
+        nos_of_subformula += 1
+        s.add(And(first_implies, Implies(implies_precedent, implies_antecedent)))
+        nos_of_subformula += 1
 
         while i >= 0 and (index[i] == (len(model.states) - 1) or (i + 1) not in rel_quant):
             r_state[i] = 0
@@ -1650,19 +1618,18 @@ def Semantics(model, formula_duplicate, n):
 
     elif formula_duplicate.data == 'calc_reward':
         child = formula_duplicate.children[1]
-        prob_formula = Tree('calc_probability', [
-            child])  # Importing a class for this is probably not the optimal way to do this, maybe try to find an alternative
+        prob_formula = Tree('calc_probability', [child])  # Importing a class for this is probably not the optimal way to do this, maybe try to find an alternative
         if child.data == 'calc_next':
-            rel_quant.extend(SemanticsNext(model, prob_formula, n))
+            SemanticsNext(model, prob_formula, n)
             rel_quant.extend(SemanticsRewNext(model, formula_duplicate, n))
         elif child.data == 'calc_until_unbounded':
-            rel_quant.extend(SemanticsUnboundedUntil(model, prob_formula, n))
+            SemanticsUnboundedUntil(model, prob_formula, n)
             rel_quant.extend(SemanticsRewUnboundedUntil(model, formula_duplicate, n))
         elif child.data == 'calc_until_bounded':
-            rel_quant.extend(SemanticsBoundedUntil(model, prob_formula, n))
+            SemanticsBoundedUntil(model, prob_formula, n)
             rel_quant.extend(SemanticsRewBoundedUntil(model, formula_duplicate, n))
         elif child.data == 'calc_future':
-            rel_quant.extend(SemanticsFuture(model, prob_formula, n))
+            SemanticsFuture(model, prob_formula, n) # it's relevant quantifier will be the same as the rewards, hence not adding it to avoid duplication
             rel_quant.extend(SemanticsRewFuture(model, formula_duplicate, n))
         return rel_quant
 
@@ -1891,7 +1858,6 @@ def Truth(model, formula_initial, combined_list_of_states, n):
 
 
 def add_to_subformula_list(formula_phi):  # add as you go any new subformula part as needed
-    #if formula_phi.data in ['exist_scheduler', 'forall_scheduler', 'exist', 'forall']:
     if formula_phi.data in ['exist', 'forall']:
         formula_phi = formula_phi.children[1]
         add_to_subformula_list(formula_phi)
@@ -1949,170 +1915,115 @@ def check_result(mdp_model):
     li_a = None
     if t == sat:
         model = s.model()
-        li_a = [None] * len(mdp_model.states)
-        for li in model:
-            if li.name()[0] == 'a':
-                li_a[int(li.name()[2:])] = model[li]
+        # li_a = [None] * len(mdp_model.states)
+        # for li in model:
+        #     if li.name()[0] == 'a':
+        #         li_a[int(li.name()[2:])] = model[li]
     if t.r == 1:
-        return True, li_a, s.statistics(), z3time
+        return True, model, s.statistics(), z3time
     elif t.r == -1:
-        return False, li_a, s.statistics(), z3time
+        return False, s.statistics(), z3time
 
 
 def main_smt_encoding(model, formula_initial, formula):
     global nos_of_subformula
     list_of_states = []
-    starttime = time.process_time()
-    for state in model.states:
-        list_of_eqns = []
-        name = "a_" + str(state.id)  # a_1 means action for state 1
-        add_to_variable_list(name)
-        for action in state.actions:
-             list_of_eqns.append(listOfInts[list_of_ints.index(name)] == int(action.id))
-        if len(list_of_eqns) == 1:
-             s.add(list_of_eqns[0])
-        else:
-             s.add(Or([par for par in list_of_eqns]))
-        nos_of_subformula += 1
-    print("Encoded actions in the MDP...")
+    starttime = time.perf_counter()
     n_of_state_quantifier = 0
     formula_duplicate = formula_initial
     while len(formula_duplicate.children) > 0 and type(formula_duplicate.children[0]) == Token:
-        # if formula_duplicate.data in ['exist_scheduler', 'forall_scheduler']:
-        #     formula_duplicate = formula_duplicate.children[1]
         if formula_duplicate.data in ['exist', 'forall']:
             n_of_state_quantifier += 1
-            formula_duplicate = formula_duplicate.children[1]
-        else:
             formula_duplicate = formula_duplicate.children[1]
     for state in model.states:
         list_of_states.append(state.id)
     combined_list_of_states = list(itertools.product(list_of_states, repeat=n_of_state_quantifier))
-    add_to_subformula_list(formula_initial)
-    Truth(model, formula_initial, combined_list_of_states, n_of_state_quantifier)
-    Semantics(model, formula_duplicate, n_of_state_quantifier)
-    print("Encoded non-quantified formula...")
-    smt_end_time = time.process_time() - starttime
-    print("Time to encode in seconds: " + str(round(smt_end_time, 2)))
-    print("Checking...")
-    res, li_a, statis, z3time = check_result(model)
-    if res:
-        print("The property HOLDS!\n")
-        print("\nThe actions at the corresponding states of the witness are:")
-        for i in range(0, len(model.states)):
-            print("State " + str(i) + ' = ' + str(li_a[i]))
+
+    if formula_initial.data == 'exist':
+        add_to_subformula_list(formula_initial)
+        Truth(model, formula_initial, combined_list_of_states, n_of_state_quantifier)
+        print("Encoded quantifiers")
+        Semantics(model, formula_duplicate, n_of_state_quantifier)
+        print("Encoded non-quantified formula...")
+        smt_end_time = time.perf_counter() - starttime
+
+        print("Time to encode in seconds: " + str(round(smt_end_time, 2)))
+        print("Checking...")
+        res, all, statis, z3time = check_result(model)
+        if res:
+            print("The property HOLDS!\n")
+            print("\nThe actions at the corresponding states of the witness are:")
+            for i in range(len(all)):
+                print(str(all[i]) + " = " + str(all[all[i]]))
+            print("\n")
+        else:
+            print("The property DOES NOT hold!")
+
+        print("z3 statistics:")
+        print(statis)
+        print("\nTime to encode in seconds: " + str(round(smt_end_time, 2)))
+        print("Time required by z3 in seconds: " + str(round(z3time, 2)))
         print("\n")
-    else:
-        print("The property DOES NOT hold!")
-        print("\nThe actions at the corresponding states of the witness are:")
-        for i in range(0, len(model.states)):
-            print("State " + str(i) + ' = ' + str(li_a[i]))
+        print("Number of variables: " + str(len(list_of_ints) + len(list_of_reals) + len(list_of_bools)))
+        print("Number of formula checked: " + str(nos_of_subformula))
+
+    elif formula_initial.data == 'forall':
+        new_formula = ''
+        i = 0
+        first = True
+        while i < len(formula):
+            if formula[i] == 'E':
+                if formula[i + 1] == ' ':
+                    new_formula += 'A' + formula[i + 1]
+                    i += 2
+            elif formula[i] == 'A':
+                if formula[i + 1] == ' ':
+                    new_formula += 'E' + formula[i + 1]
+                    i += 2
+            else:
+                if first and formula[i - 1] == ' ' and formula[i - 2] == '.':
+                    if formula[i] == '~':
+                        # added this to avoid double negation for exist. Might want to remove the extra brace around
+                        # the formula due to previous not.
+                        first = False
+                        i += 1
+                        continue
+                    else:
+                        new_formula += '~'
+                    first = False
+                new_formula += formula[i]
+                i += 1
+        new_parsed_formula = parser.parse(new_formula)
+        formula_duplicate = new_parsed_formula
+        while len(formula_duplicate.children) > 0 and type(formula_duplicate.children[0]) == Token:
+            if formula_duplicate.data in ['exist', 'forall']:
+                formula_duplicate = formula_duplicate.children[1]
+        add_to_subformula_list(new_parsed_formula)
+        Truth(model, new_parsed_formula, combined_list_of_states, n_of_state_quantifier)
+        print("Encoded quantifiers")
+        Semantics(model, formula_duplicate, n_of_state_quantifier)
+        print("Encoded non-quantified formula...")
+        smt_end_time = time.perf_counter() - starttime
+
+        print("Time to encode in seconds: " + str(round(smt_end_time, 2)))
+        print("Checking...")
+        res, all, statis, z3time = check_result(model)
+        if res:
+            print("The property DOES NOT hold!")
+            # print("\nThe actions at the corresponding states of a counterexample are:")
+            for i in range(0, len(all)):
+                print(str(all[i]) + " = " + str(all[all[i]]))
+            print("\n")
+        else:
+            print("The property HOLDS!")
+
+        print("z3 statistics:")
+        print(statis)
+        print("\nTime to encode in seconds: " + str(round(smt_end_time, 2)))
+        print("Time required by z3 in seconds: " + str(round(z3time, 2)))
         print("\n")
-
-    print("z3 statistics:")
-    print(statis)
-    print("\nTime to encode in seconds: " + str(round(smt_end_time, 2)))
-    print("Time required by z3 in seconds: " + str(round(z3time, 2)))
-    print("\n")
-    print("Number of variables: " + str(len(list_of_ints) + len(list_of_reals) + len(list_of_bools)))
-    print("Number of formula checked: " + str(nos_of_subformula))
-
-
-    # if formula_initial.data == 'exist_scheduler':
-    #     add_to_subformula_list(formula_initial)
-    #     Truth(model, formula_initial, combined_list_of_states, n_of_state_quantifier)
-    #
-    #     Semantics(model, formula_duplicate, n_of_state_quantifier)
-    #     print("Encoded non-quantified formula...")
-    #     smt_end_time = time.process_time() - starttime
-    #
-    #     print("Time to encode in seconds: " + str(round(smt_end_time, 2)))
-    #     print("Checking...")
-    #     res, li_a, statis, z3time = check_result(model)
-    #     if res:
-    #         print("The property HOLDS!\n")
-    #         print("\nThe actions at the corresponding states of the witness are:")
-    #         for i in range(0, len(model.states)):
-    #             print("State " + str(i) + ' = ' + str(li_a[i]))
-    #         print("\n")
-    #     else:
-    #         print("The property DOES NOT hold!")
-    #
-    #     print("z3 statistics:")
-    #     print(statis)
-    #     print("\nTime to encode in seconds: " + str(round(smt_end_time, 2)))
-    #     print("Time required by z3 in seconds: " + str(round(z3time, 2)))
-    #     print("\n")
-    #     print("Number of variables: " + str(len(list_of_ints) + len(list_of_reals) + len(list_of_bools)))
-    #     print("Number of formula checked: " + str(nos_of_subformula))
-    #
-    # elif formula_initial.data == 'forall_scheduler':
-    #     new_formula = ''
-    #     i = 0
-    #     first = True
-    #     while i < len(formula):
-    #
-    #         if formula[i] == 'E':
-    #             if formula[i + 1] == 'S':
-    #                 new_formula += formula[i] + formula[i + 1]
-    #                 i += 2
-    #             elif formula[i + 1] == ' ':
-    #                 new_formula += 'A' + formula[i + 1]
-    #                 i += 2
-    #         elif formula[i] == 'A':
-    #             if formula[i + 1] == 'S':
-    #                 new_formula += 'E' + formula[i + 1]
-    #                 i += 2
-    #             elif formula[i + 1] == ' ':
-    #                 new_formula += 'E' + formula[i + 1]
-    #                 i += 2
-    #         else:
-    #             if first and formula[i - 1] == ' ' and formula[i - 2] == '.':
-    #                 if formula[i] == '~':
-    #                     # added this to avoid double negation for exist. Might want to remove the extra brace around
-    #                     # the formula due to previous not.
-    #                     first = False
-    #                     i += 1
-    #                     continue
-    #                 else:
-    #                     new_formula += '~'
-    #                 first = False
-    #             new_formula += formula[i]
-    #             i += 1
-    #     new_parsed_formula = parser.parse(new_formula)
-    #     formula_duplicate = new_parsed_formula
-    #     n_of_state_quantifier = 0
-    #     while len(formula_duplicate.children) > 0 and type(formula_duplicate.children[0]) == Token:
-    #         if formula_duplicate.data in ['exist_scheduler', 'forall_scheduler']:
-    #             formula_duplicate = formula_duplicate.children[1]
-    #         elif formula_duplicate.data in ['exist', 'forall']:
-    #             n_of_state_quantifier += 1
-    #             formula_duplicate = formula_duplicate.children[1]
-    #     add_to_subformula_list(new_parsed_formula)
-    #     Truth(model, new_parsed_formula, combined_list_of_states, n_of_state_quantifier)
-    #     Semantics(model, formula_duplicate, n_of_state_quantifier)
-    #     print("Encoded non-quantified formula...")
-    #     smt_end_time = time.process_time() - starttime
-    #
-    #     print("Time to encode in seconds: " + str(round(smt_end_time, 2)))
-    #     print("Checking...")
-    #     res, li_a, statis, z3time = check_result(model)
-    #     if res:
-    #         print("The property DOES NOT hold!")
-    #         print("\nThe actions at the corresponding states of a counterexample are:")
-    #         for i in range(0, len(model.states)):
-    #             print("State " + str(i) + ' = ' + str(li_a[i]))
-    #         print("\n")
-    #     else:
-    #         print("The property HOLDS!")
-    #
-    #     print("z3 statistics:")
-    #     print(statis)
-    #     print("\nTime to encode in seconds: " + str(round(smt_end_time, 2)))
-    #     print("Time required by z3 in seconds: " + str(round(z3time, 2)))
-    #     print("\n")
-    #     print("Number of variables: " + str(len(list_of_ints) + len(list_of_reals) + len(list_of_bools)))
-    #     print("Number of formula checked: " + str(nos_of_subformula))
+        print("Number of variables: " + str(len(list_of_ints) + len(list_of_reals) + len(list_of_bools)))
+        print("Number of formula checked: " + str(nos_of_subformula))
 
 
 def rebuild_exact_value_model(initial_mod):
