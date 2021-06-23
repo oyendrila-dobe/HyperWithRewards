@@ -881,8 +881,9 @@ def SemanticsRewFuture(model, formula_duplicate, n):
     index_of_phi1 = list_of_subformula.index(phi1)
     index_of_phi = list_of_subformula.index(formula_duplicate)
     index_of_phi_prob = list_of_subformula.index(prob_formula)
-    # rel_quant.extend(Semantics(model, phi1, n))  This have already been added when parsing the future operator
-    rel_quant.append(relevant_quantifier)
+    rel_quant.extend(Semantics(model, phi1, n))
+    if relevant_quantifier not in rel_quant:
+        rel_quant.append(relevant_quantifier)
     r_state = [0 for ind in range(n)]
 
     # OD: will try to remove action as a last resort
@@ -1913,6 +1914,7 @@ def check_result(mdp_model):
     t = s.check()
     z3time = time.process_time() - starting
     li_a = None
+    model = None
     if t == sat:
         model = s.model()
         # li_a = [None] * len(mdp_model.states)
@@ -1922,7 +1924,7 @@ def check_result(mdp_model):
     if t.r == 1:
         return True, model, s.statistics(), z3time
     elif t.r == -1:
-        return False, s.statistics(), z3time
+        return False, model, s.statistics(), z3time
 
 
 def main_smt_encoding(model, formula_initial, formula):
