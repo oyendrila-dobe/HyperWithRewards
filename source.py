@@ -893,7 +893,8 @@ def SemanticsRewFuture(model, formula_duplicate, n):
     index_of_phi = list_of_subformula.index(formula_duplicate)
     index_of_phi_prob = list_of_subformula.index(prob_formula)
     rel_quant.extend(Semantics(model, phi1, n)) # have already done this in future, need to figure out a simple code to get just the relevant quantifiers
-    rel_quant.append(relevant_quantifier)
+    if relevant_quantifier not in rel_quant:
+        rel_quant.append(relevant_quantifier)
     r_state = [0 for ind in range(n)]
 
     dict_of_acts = dict()
@@ -1941,21 +1942,28 @@ def add_to_variable_list(name):
         listOfInts.append(Int(name))
 
 
-def check_result(mdp_model):
+def check_result(mdp_model, first_quantifier):
     starting = time.process_time()
     t = s.check()
     z3time = time.process_time() - starting
     li_a = None
-    if t == sat:
-        model = s.model()
-        li_a = [None] * len(mdp_model.states)
-        for li in model:
-            if li.name()[0] == 'a':
-                li_a[int(li.name()[2:])] = model[li]
-    if t.r == 1:
-        return True, li_a, s.statistics(), z3time
-    elif t.r == -1:
-        return False, li_a, s.statistics(), z3time
+    if first_quantifier == 'exist':
+        if t == sat:
+            model = s.model()
+            li_a = [None] * len(mdp_model.states)
+            for li in model:
+                if li.name()[0] == 'a':
+                    li_a[int(li.name()[2:])] = model[li]
+        if t.r == 1:
+            return True, li_a, s.statistics(), z3time
+        elif t.r == -1:
+            m = s.model()
+            return False, li_a, s.statistics(), z3time
+    if first_quantifier == 'forall':
+        if t == unsat:
+            model = s.model()
+            print("hey")
+            # continue here with printing of counterexample
 
 
 def main_smt_encoding(model, formula_initial, formula):
@@ -1976,14 +1984,20 @@ def main_smt_encoding(model, formula_initial, formula):
     print("Encoded actions in the MDP...")
     n_of_state_quantifier = 0
     formula_duplicate = formula_initial
+    fg = True
+    first_quantifier = None
     while len(formula_duplicate.children) > 0 and type(formula_duplicate.children[0]) == Token:
         # if formula_duplicate.data in ['exist_scheduler', 'forall_scheduler']:
         #     formula_duplicate = formula_duplicate.children[1]
+        if fg:
+            first_quantifier = formula_duplicate.data
+            fg = False
         if formula_duplicate.data in ['exist', 'forall']:
             n_of_state_quantifier += 1
             formula_duplicate = formula_duplicate.children[1]
         else:
             formula_duplicate = formula_duplicate.children[1]
+
     for state in model.states:
         list_of_states.append(state.id)
     combined_list_of_states = list(itertools.product(list_of_states, repeat=n_of_state_quantifier))
@@ -1994,7 +2008,7 @@ def main_smt_encoding(model, formula_initial, formula):
     smt_end_time = time.process_time() - starttime
     print("Time to encode in seconds: " + str(round(smt_end_time, 2)))
     print("Checking...")
-    res, li_a, statis, z3time = check_result(model)
+    res, li_a, statis, z3time = check_result(model, first_quantifier)
     if res:
         print("The property HOLDS!\n")
         print("\nThe actions at the corresponding states of the witness are:")
