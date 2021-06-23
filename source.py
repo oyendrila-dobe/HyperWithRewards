@@ -893,7 +893,8 @@ def SemanticsRewFuture(model, formula_duplicate, n):
     index_of_phi = list_of_subformula.index(formula_duplicate)
     index_of_phi_prob = list_of_subformula.index(prob_formula)
     rel_quant.extend(Semantics(model, phi1, n)) # have already done this in future, need to figure out a simple code to get just the relevant quantifiers
-    rel_quant.append(relevant_quantifier)
+    if relevant_quantifier not in rel_quant:
+        rel_quant.append(relevant_quantifier)
     r_state = [0 for ind in range(n)]
 
     dict_of_acts = dict()
