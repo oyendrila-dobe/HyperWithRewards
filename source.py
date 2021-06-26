@@ -729,13 +729,15 @@ def SemanticsNext(model, formula_duplicate, n):
     return rel_quant
 
 
-def SemanticsFuture(model, formula_duplicate, n):
+def SemanticsFuture(model, formula_duplicate, n, rel=[]):
     global nos_of_subformula
     rel_quant = []
+    if len(rel) > 0:
+        rel_quant.extend(rel)
     phi1 = formula_duplicate.children[0].children[0]
     index_of_phi1 = list_of_subformula.index(phi1)
     index_of_phi = list_of_subformula.index(formula_duplicate)
-    rel_quant.extend(Semantics(model, phi1, n))
+    rel_quant = Semantics(model, phi1, n, rel)
     r_state = [0 for ind in range(n)]
 
     dict_of_acts = dict()
@@ -881,7 +883,8 @@ def SemanticsRewFuture(model, formula_duplicate, n):
     index_of_phi1 = list_of_subformula.index(phi1)
     index_of_phi = list_of_subformula.index(formula_duplicate)
     index_of_phi_prob = list_of_subformula.index(prob_formula)
-    rel_quant.extend(Semantics(model, phi1, n))
+    rel_quant = SemanticsFuture(model, prob_formula, n, [relevant_quantifier])
+    # rel_quant.extend(Semantics(model, phi1, n))
     if relevant_quantifier not in rel_quant:
         rel_quant.append(relevant_quantifier)
     r_state = [0 for ind in range(n)]
@@ -934,7 +937,7 @@ def SemanticsRewFuture(model, formula_duplicate, n):
         combined_acts = list(itertools.product(*dicts))
 
         implies_precedent = And(listOfReals[list_of_reals.index(prob_phi)] == float(1),
-                                    Not(listOfBools[list_of_bools.index(holds1)]))
+                                Not(listOfBools[list_of_bools.index(holds1)]))
         nos_of_subformula += 2  # Here too
 
         dicts = []
@@ -946,7 +949,6 @@ def SemanticsRewFuture(model, formula_duplicate, n):
 
         first = True
         prod_left = None
-
 
         for cs in combined_succ:
             f = 0
@@ -985,7 +987,8 @@ def SemanticsRewFuture(model, formula_duplicate, n):
             nos_of_subformula += 1
 
         implies_antecedent = listOfReals[list_of_reals.index(rew_phi)] == (
-                float(reward_model.get_state_reward(r_state[relevant_quantifier - 1])) + prod_left)  # why are we adding reward for just one state, might have to generalize this later
+                float(reward_model.get_state_reward(r_state[
+                                                        relevant_quantifier - 1])) + prod_left)  # why are we adding reward for just one state, might have to generalize this later
         nos_of_subformula += 1
         s.add(And(first_implies, Implies(implies_precedent, implies_antecedent)))
         nos_of_subformula += 1
@@ -1001,10 +1004,13 @@ def SemanticsRewFuture(model, formula_duplicate, n):
     return rel_quant
 
 
-def Semantics(model, formula_duplicate, n):
+def Semantics(model, formula_duplicate, n, rel=[]):
     global nos_of_subformula
     r_state = [0 for ind in range(n)]
     rel_quant = []
+    if len(rel) > 0:
+        rel_quant.extend(rel)
+
     if formula_duplicate.data == 'true':
         index_of_phi = list_of_subformula.index(formula_duplicate)
         name = "holds"
@@ -1614,12 +1620,13 @@ def Semantics(model, formula_duplicate, n):
         elif child.data == 'calc_until_bounded':
             rel_quant.extend(SemanticsBoundedUntil(model, formula_duplicate, n))
         elif child.data == 'calc_future':
-            rel_quant.extend(SemanticsFuture(model, formula_duplicate, n))
+            rel_quant.extend(SemanticsFuture(model, formula_duplicate, n, rel))
         return rel_quant
 
     elif formula_duplicate.data == 'calc_reward':
         child = formula_duplicate.children[1]
-        prob_formula = Tree('calc_probability', [child])  # Importing a class for this is probably not the optimal way to do this, maybe try to find an alternative
+        prob_formula = Tree('calc_probability', [
+            child])  # Importing a class for this is probably not the optimal way to do this, maybe try to find an alternative
         if child.data == 'calc_next':
             SemanticsNext(model, prob_formula, n)
             rel_quant.extend(SemanticsRewNext(model, formula_duplicate, n))
@@ -1630,12 +1637,13 @@ def Semantics(model, formula_duplicate, n):
             SemanticsBoundedUntil(model, prob_formula, n)
             rel_quant.extend(SemanticsRewBoundedUntil(model, formula_duplicate, n))
         elif child.data == 'calc_future':
-            SemanticsFuture(model, prob_formula, n) # it's relevant quantifier will be the same as the rewards, hence not adding it to avoid duplication
+            # shifting this to rewards for the mixed state variable case (R s1 p(f( safe(s2)))
+            # SemanticsFuture(model, prob_formula,n)  # it's relevant quantifier will be the same as the rewards, hence not adding it to avoid duplication
             rel_quant.extend(SemanticsRewFuture(model, formula_duplicate, n))
         return rel_quant
 
     elif formula_duplicate.data == 'const':
-        c = formula_duplicate.children[0].value
+        c = RealVal(formula_duplicate.children[0].value).as_fraction().limit_denominator(10000)
         index_of_phi = list_of_subformula.index(formula_duplicate)
         name = "prob"
         for ind in r_state:
@@ -1855,7 +1863,6 @@ def Truth(model, formula_initial, combined_list_of_states, n):
         list_of_holds = copy.deepcopy(list_of_holds_replace)
         list_of_holds_replace.clear()
     s.add(list_of_holds[0])
-    print("Encoded quantifiers...")
 
 
 def add_to_subformula_list(formula_phi):  # add as you go any new subformula part as needed
@@ -1927,16 +1934,89 @@ def check_result(mdp_model):
         return False, model, s.statistics(), z3time
 
 
+def find_token(formula, tok):
+    nos_children = len(formula.children)
+    res1 = False
+    res2 = False
+    if nos_children == 0:
+        return False
+
+    if formula.children[0] == tok:
+        res1 = True
+    elif formula.children[0] != tok and type(formula.children[0]) != Token:
+        res1 = find_token(formula.children[0], tok)
+
+    if nos_children > 1 and not res1:
+        if formula.children[1] == tok:
+            res2 = True
+        elif formula.children[1] != tok and type(formula.children[1]) != Token:
+            res2 = find_token(formula.children[1], tok)
+
+    return res1 or res2
+
+
+def rename_quantifier_var(formula_inp, old, new):
+    nos_children = len(formula_inp.children)
+    if nos_children == 0:
+        return formula_inp
+
+    if formula_inp.children[0] == old:
+        formula_inp.children[0] = new
+    elif formula_inp.children[0] != old and type(formula_inp.children[0]) != Token:
+        formula_inp.children[0] = rename_quantifier_var(formula_inp.children[0], old, new)
+
+    if nos_children > 1:
+        if formula_inp.children[1] == old:
+            formula_inp.children[1] = new
+        elif formula_inp.children[1] != old and type(formula_inp.children[1]) != Token:
+            formula_inp.children[1] = rename_quantifier_var(formula_inp.children[1], old, new)
+
+    return formula_inp
+
+
+def edit_formula(formula_inp):
+    formula_inp_dup = formula_inp
+    previous_head = None
+    nos_of_quantifier = 0
+    quantifier_change = []  # false indicates the quantifier was deleted, true indicates it'll stay but might need name change
+    while len(formula_inp_dup.children) > 0 and type(formula_inp_dup.children[0]) == Token:
+        if formula_inp_dup.data in ['exist', 'forall']:
+            tok = formula_inp_dup.children[0]
+            res = find_token(formula_inp_dup.children[1], tok)
+            if not res:
+                if previous_head is None:
+                    formula_inp = formula_inp_dup.children[1]
+                else:
+                    previous_head.children[1] = formula_inp_dup.children[1]
+                    formula_inp = previous_head
+            else:
+                nos_of_quantifier += 1
+                previous_head = formula_inp
+            quantifier_change.append(not res)
+            formula_inp_dup = formula_inp_dup.children[1]
+
+    quant_index = 1
+    for quant in range(len(quantifier_change)):
+        if quantifier_change[quant] and quant_index < (quant + 1):
+            old = Token('NAME', 's' + str(quant + 1))
+            new = Token('NAME', 's' + str(quant_index))
+            formula_inp = rename_quantifier_var(formula_inp, old, new)
+            quant_index += 1
+    print(formula_inp)
+    formula_inp_dup = formula_inp
+    while len(formula_inp_dup.children) > 0 and type(formula_inp_dup.children[0]) == Token:
+        if formula_inp_dup.data in ['exist', 'forall']:
+            formula_inp_dup = formula_inp_dup.children[1]
+    return formula_inp, formula_inp_dup, nos_of_quantifier
+
+
 def main_smt_encoding(model, formula_initial, formula):
     global nos_of_subformula
     list_of_states = []
     starttime = time.perf_counter()
-    n_of_state_quantifier = 0
-    formula_duplicate = formula_initial
-    while len(formula_duplicate.children) > 0 and type(formula_duplicate.children[0]) == Token:
-        if formula_duplicate.data in ['exist', 'forall']:
-            n_of_state_quantifier += 1
-            formula_duplicate = formula_duplicate.children[1]
+
+    formula_initial, formula_duplicate, n_of_state_quantifier = edit_formula(formula_initial)
+
     for state in model.states:
         list_of_states.append(state.id)
     combined_list_of_states = list(itertools.product(list_of_states, repeat=n_of_state_quantifier))
@@ -1954,7 +2034,7 @@ def main_smt_encoding(model, formula_initial, formula):
         res, all, statis, z3time = check_result(model)
         if res:
             print("The property HOLDS!\n")
-            print("\nThe actions at the corresponding states of the witness are:")
+            print("\nThe values of variables of the witness are:")
             for i in range(len(all)):
                 print(str(all[i]) + " = " + str(all[all[i]]))
             print("\n")
@@ -1970,38 +2050,57 @@ def main_smt_encoding(model, formula_initial, formula):
         print("Number of formula checked: " + str(nos_of_subformula))
 
     elif formula_initial.data == 'forall':
-        new_formula = ''
         i = 0
         first = True
-        while i < len(formula):
-            if formula[i] == 'E':
-                if formula[i + 1] == ' ':
-                    new_formula += 'A' + formula[i + 1]
-                    i += 2
-            elif formula[i] == 'A':
-                if formula[i + 1] == ' ':
-                    new_formula += 'E' + formula[i + 1]
-                    i += 2
+        tmp_formula = formula_initial
+        new_formula = None
+        while len(tmp_formula.children) > 0 and type(tmp_formula.children[0]) == Token:
+            if tmp_formula.data == 'exist':
+                tmp_formula.data = 'forall'
+            elif tmp_formula.data == 'forall':
+                tmp_formula.data = 'exist'
+            elif tmp_formula.data == 'neg_op':
+                pass
+            if tmp_formula.children[1].data in ['exist', 'forall']:
+                tmp_formula = tmp_formula.children[1]
             else:
-                if first and formula[i - 1] == ' ' and formula[i - 2] == '.':
-                    if formula[i] == '~':
-                        # added this to avoid double negation for exist. Might want to remove the extra brace around
-                        # the formula due to previous not.
-                        first = False
-                        i += 1
-                        continue
-                    else:
-                        new_formula += '~'
-                    first = False
-                new_formula += formula[i]
-                i += 1
-        new_parsed_formula = parser.parse(new_formula)
-        formula_duplicate = new_parsed_formula
+                break
+        if tmp_formula.children[1].data == 'neg_op':
+            tmp_formula.children[1] = tmp_formula.children[1].children[0]
+        else:
+            tmp_formula.children[1] = Tree('neg_op', [tmp_formula.children[1]])
+
+        # have implemented negation logic above in the tree instead of in the string
+
+        # while i < len(formula):
+        #     if formula[i] == 'E':
+        #         if formula[i + 1] == ' ':
+        #             new_formula += 'A' + formula[i + 1]
+        #             i += 2
+        #     elif formula[i] == 'A':
+        #         if formula[i + 1] == ' ':
+        #             new_formula += 'E' + formula[i + 1]
+        #             i += 2
+        #     else:
+        #         if first and formula[i - 1] == ' ' and formula[i - 2] == '.':
+        #             if formula[i] == '~':
+        #                 # added this to avoid double negation for exist. Might want to remove the extra brace around
+        #                 # the formula due to previous not.
+        #                 first = False
+        #                 i += 1
+        #                 continue
+        #             else:
+        #                 new_formula += '~'
+        #             first = False
+        #         new_formula += formula[i]
+        #         i += 1
+        # new_parsed_formula = parser.parse(new_formula)
+        formula_duplicate = copy.deepcopy(formula_initial)
         while len(formula_duplicate.children) > 0 and type(formula_duplicate.children[0]) == Token:
             if formula_duplicate.data in ['exist', 'forall']:
                 formula_duplicate = formula_duplicate.children[1]
-        add_to_subformula_list(new_parsed_formula)
-        Truth(model, new_parsed_formula, combined_list_of_states, n_of_state_quantifier)
+        add_to_subformula_list(formula_initial)
+        Truth(model, formula_initial, combined_list_of_states, n_of_state_quantifier)
         print("Encoded quantifiers")
         Semantics(model, formula_duplicate, n_of_state_quantifier)
         print("Encoded non-quantified formula...")
@@ -2012,7 +2111,7 @@ def main_smt_encoding(model, formula_initial, formula):
         res, all, statis, z3time = check_result(model)
         if res:
             print("The property DOES NOT hold!")
-            # print("\nThe actions at the corresponding states of a counterexample are:")
+            print("\nThe values of variables of a counterexample are:")
             for i in range(0, len(all)):
                 print(str(all[i]) + " = " + str(all[all[i]]))
             print("\n")
@@ -2100,7 +2199,6 @@ if __name__ == '__main__':
     parser = Lark(turtle_grammar)
     formula = sys.argv[2]
     parsed_formula_initial = parser.parse(formula)
-    print(parsed_formula_initial)
     s = Solver()
 
     main_smt_encoding(initial_model, parsed_formula_initial, formula)
