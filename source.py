@@ -881,8 +881,46 @@ def SemanticsRewFuture(model, formula_duplicate, n):
     index_of_phi1 = list_of_subformula.index(phi1)
     index_of_phi = list_of_subformula.index(formula_duplicate)
     index_of_phi_prob = list_of_subformula.index(prob_formula)
-    rel_quant.extend(Semantics(model, phi1, n))
+    rel_quant.extend(Semantics(model, prob_formula, n))
     if relevant_quantifier not in rel_quant:
+        r_state = [0 for ind in range(n)]
+        index = []
+        for j in range(0, n):
+            index.append(0)
+        i = n - 1
+        flag = False
+        while i >= 0:
+            holds1 = 'holds'
+            str_r_state = ""
+            for ind in r_state:
+                str_r_state += "_" + str(ind)
+            holds1 += str_r_state + "_" + str(index_of_phi1)
+            add_to_variable_list(holds1)
+            prob_phi = 'prob'
+            prob_phi += str_r_state + '_' + str(index_of_phi_prob)
+            add_to_variable_list(prob_phi)
+
+            for state in model.states:
+                number = state.id
+                holdsIndex = 2*relevant_quantifier+4
+                probIndex = 2*relevant_quantifier+3
+                newHolds = holds1[:holdsIndex] + str(number) + holds1[holdsIndex+1:]
+                add_to_variable_list(newHolds)
+                newProb = prob_phi[:probIndex] + str(number) + prob_phi[probIndex+1:]
+                add_to_variable_list(newProb)
+                s.add(Implies(listOfBools[list_of_bools.index(holds1)], listOfBools[list_of_bools.index(newHolds)]))
+                s.add(Implies(listOfBools[list_of_bools.index(newHolds)], listOfBools[list_of_bools.index(holds1)]))
+                s.add(listOfReals[list_of_reals.index(prob_phi)] == listOfReals[list_of_reals.index(newProb)])
+
+
+            while i >= 0 and (index[i] == (len(model.states) - 1) or (i + 1) not in rel_quant):
+                r_state[i] = 0
+                index[i] = 0
+                i = i - 1
+
+            if i >= 0:
+                index[i] = index[i] + 1
+                r_state[i] = index[i]
         rel_quant.append(relevant_quantifier)
     r_state = [0 for ind in range(n)]
 
@@ -1630,7 +1668,6 @@ def Semantics(model, formula_duplicate, n):
             SemanticsBoundedUntil(model, prob_formula, n)
             rel_quant.extend(SemanticsRewBoundedUntil(model, formula_duplicate, n))
         elif child.data == 'calc_future':
-            SemanticsFuture(model, prob_formula, n) # it's relevant quantifier will be the same as the rewards, hence not adding it to avoid duplication
             rel_quant.extend(SemanticsRewFuture(model, formula_duplicate, n))
         return rel_quant
 
