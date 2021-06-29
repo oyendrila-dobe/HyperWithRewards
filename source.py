@@ -768,9 +768,11 @@ def SemanticsFuture(model, formula_duplicate, n, rel=[]):
         prob_phi = 'prob'
         prob_phi += str_r_state + '_' + str(index_of_phi)
         add_to_variable_list(prob_phi)
-        new_prob_const = listOfReals[list_of_reals.index(prob_phi)] >= float(0)
+        new_prob_const_0 = listOfReals[list_of_reals.index(prob_phi)] >= float(0)
+        new_prob_const_1 = listOfReals[list_of_reals.index(prob_phi)] <= float(1)
         first_implies = And(Implies(listOfBools[list_of_bools.index(holds1)],
-                                    (listOfReals[list_of_reals.index(prob_phi)] == float(1))), new_prob_const)
+                                    (listOfReals[list_of_reals.index(prob_phi)] == float(1))),
+                            new_prob_const_0, new_prob_const_1)
         nos_of_subformula += 1
 
         dicts = []
@@ -793,7 +795,7 @@ def SemanticsFuture(model, formula_duplicate, n, rel=[]):
         list_of_ors = []
 
         for cs in combined_succ:
-            f = 0
+            #f = 0
             prob_succ = 'prob'
             holds_succ = 'holds'
             d_current = 'd'
@@ -802,17 +804,17 @@ def SemanticsFuture(model, formula_duplicate, n, rel=[]):
             prod_left_part = None
             for l in range(1, n + 1):
                 if l in rel_quant:
-                    space = cs[f].find(' ')
-                    succ_state = cs[f - 1][0:space]
+                    space = cs[l-1].find(' ')
+                    succ_state = cs[l-1][0:space]
                     prob_succ += '_' + succ_state
                     holds_succ += '_' + succ_state
                     d_succ += '_' + succ_state
                     if p_first:
-                        prod_left_part = RealVal(cs[f - 1][space + 1:]).as_fraction()
+                        prod_left_part = RealVal(cs[l - 1][space + 1:]).as_fraction()
                         p_first = False
                     else:
-                        prod_left_part *= RealVal(cs[f - 1][space + 1:]).as_fraction()
-                    f += 1
+                        prod_left_part *= RealVal(cs[l - 1][space + 1:]).as_fraction()
+                    #f += 1
 
                 else:
                     prob_succ += '_' + str(0)
@@ -862,10 +864,27 @@ def SemanticsFuture(model, formula_duplicate, n, rel=[]):
         while i >= 0 and (index[i] == (len(model.states) - 1) or (i + 1) not in rel_quant):
             r_state[i] = 0
             index[i] = 0
-            i = i - 1
-
+            k = i - 1
+            flago = False
+            while k >= 0:
+                if k + 1 in rel_quant:
+                    flago = True
+                    break
+                else:
+                    k -= 1
+            if flago and (i + 1) in rel_quant and k >= 0 and index[k] < (len(model.states) - 1):  # special case
+                # when the current quantifier is relevant but it has reached the end of model states. So we
+                # increase the previous quantifier value and continue with current quantifier
+                index[i - 1] += 1
+                r_state[i - 1] += 1
+                flag = True
+            else:
+                i = i - 1
+        if flag:
+            flag = False
+            continue
         if i >= 0:
-            index[i] = index[i] + 1
+            index[i] += 1
             r_state[i] = index[i]
 
     return rel_quant
@@ -996,10 +1015,27 @@ def SemanticsRewFuture(model, formula_duplicate, n):
         while i >= 0 and (index[i] == (len(model.states) - 1) or (i + 1) not in rel_quant):
             r_state[i] = 0
             index[i] = 0
-            i = i - 1
-
+            k = i - 1
+            flago = False
+            while k >= 0:
+                if k + 1 in rel_quant:
+                    flago = True
+                    break
+                else:
+                    k -= 1
+            if flago and (i + 1) in rel_quant and k >= 0 and index[k] < (len(model.states) - 1):  # special case
+                # when the current quantifier is relevant but it has reached the end of model states. So we
+                # increase the previous quantifier value and continue with current quantifier
+                index[i - 1] += 1
+                r_state[i - 1] += 1
+                flag = True
+            else:
+                i = i - 1
+        if flag:
+            flag = False
+            continue
         if i >= 0:
-            index[i] = index[i] + 1
+            index[i] += 1
             r_state[i] = index[i]
     return rel_quant
 
