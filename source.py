@@ -911,6 +911,7 @@ def SemanticsRewFuture(model, formula_duplicate, n):
                 s.add(Implies(listOfBools[list_of_bools.index(holds1)], listOfBools[list_of_bools.index(newHolds)]))
                 s.add(Implies(listOfBools[list_of_bools.index(newHolds)], listOfBools[list_of_bools.index(holds1)]))
                 s.add(listOfReals[list_of_reals.index(prob_phi)] == listOfReals[list_of_reals.index(newProb)])
+                nos_of_subformula += 3
 
 
             while i >= 0 and (index[i] == (len(model.states) - 1) or (i + 1) not in rel_quant):
@@ -1949,6 +1950,8 @@ def add_to_variable_list(name):
 def check_result(mdp_model):
     starting = time.process_time()
     t = s.check()
+    for c in s.assertions():
+        print(c)
     z3time = time.process_time() - starting
     li_a = None
     model = None
