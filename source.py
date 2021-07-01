@@ -941,12 +941,12 @@ def SemanticsRewFuture(model, formula_duplicate, n):
         rew_phi += str_r_state + '_' + str(index_of_phi)
         add_to_variable_list(rew_phi)
 
-        new_inf = fpToReal(fpPlusInfinity(FPSort(8, 24)))
+        #new_inf = fpToReal(fpPlusInfinity(FPSort(8, 24)))
         first_implies = And(Implies(listOfBools[list_of_bools.index(holds1)],
                                     (listOfReals[list_of_reals.index(rew_phi)] == float(
                                         reward_model.get_state_reward(r_state[relevant_quantifier - 1])))),
                             Implies(Not(listOfReals[list_of_reals.index(prob_phi)] == float(1)),
-                                    listOfReals[list_of_reals.index(rew_phi)] == new_inf))
+                                    listOfReals[list_of_reals.index(rew_phi)] == float(-9999)))
         # float(fpPlusInfinity()  # How do we handle the case where prob != 1? TBD
         nos_of_subformula += 2  # I'm not sure how we are counting subformulas. Need to verify. OD: we can change these later, don't worry about them now
 
@@ -2066,7 +2066,7 @@ def edit_formula(formula_inp):
     return formula_inp, formula_inp_dup, nos_of_quantifier
 
 
-def main_smt_encoding(model, formula_initial, formula):
+def main_smt_encoding(model, formula_initial):
     global nos_of_subformula
     list_of_states = []
     starttime = time.perf_counter()
@@ -2106,10 +2106,7 @@ def main_smt_encoding(model, formula_initial, formula):
         print("Number of formula checked: " + str(nos_of_subformula))
 
     elif formula_initial.data == 'forall':
-        i = 0
-        first = True
         tmp_formula = formula_initial
-        new_formula = None
         while len(tmp_formula.children) > 0 and type(tmp_formula.children[0]) == Token:
             if tmp_formula.data == 'exist':
                 tmp_formula.data = 'forall'
@@ -2126,31 +2123,6 @@ def main_smt_encoding(model, formula_initial, formula):
         else:
             tmp_formula.children[1] = Tree('neg_op', [tmp_formula.children[1]])
 
-        # have implemented negation logic above in the tree instead of in the string
-
-        # while i < len(formula):
-        #     if formula[i] == 'E':
-        #         if formula[i + 1] == ' ':
-        #             new_formula += 'A' + formula[i + 1]
-        #             i += 2
-        #     elif formula[i] == 'A':
-        #         if formula[i + 1] == ' ':
-        #             new_formula += 'E' + formula[i + 1]
-        #             i += 2
-        #     else:
-        #         if first and formula[i - 1] == ' ' and formula[i - 2] == '.':
-        #             if formula[i] == '~':
-        #                 # added this to avoid double negation for exist. Might want to remove the extra brace around
-        #                 # the formula due to previous not.
-        #                 first = False
-        #                 i += 1
-        #                 continue
-        #             else:
-        #                 new_formula += '~'
-        #             first = False
-        #         new_formula += formula[i]
-        #         i += 1
-        # new_parsed_formula = parser.parse(new_formula)
         formula_duplicate = copy.deepcopy(formula_initial)
         while len(formula_duplicate.children) > 0 and type(formula_duplicate.children[0]) == Token:
             if formula_duplicate.data in ['exist', 'forall']:
@@ -2234,10 +2206,11 @@ if __name__ == '__main__':
 
     initial_prism_program = stormpy.parse_prism_program(path)
     initial_model = stormpy.build_model(initial_prism_program)
+
+    initial_prism_program = stormpy.parse_prism_program(path)
+    initial_model = stormpy.build_model(initial_prism_program)
     print("Total number of states: " + str(len(initial_model.states)))
 
-    # print(initial_model.reward_models.keys()) #This is for testing
-    # print(initial_model.reward_models.get("").get_state_reward(4)) #This too
     tar = 0
     ac = 0
 
@@ -2257,4 +2230,4 @@ if __name__ == '__main__':
     parsed_formula_initial = parser.parse(formula)
     s = Solver()
 
-    main_smt_encoding(initial_model, parsed_formula_initial, formula)
+    main_smt_encoding(initial_model, parsed_formula_initial)
