@@ -1,5 +1,5 @@
 import itertools
-import time
+import time, math
 
 import stormpy
 from lark import Lark, Token, Tree
@@ -941,12 +941,12 @@ def SemanticsRewFuture(model, formula_duplicate, n):
         rew_phi += str_r_state + '_' + str(index_of_phi)
         add_to_variable_list(rew_phi)
 
-        new_inf = fpToReal(fpPlusInfinity(FPSort(8, 24)))
+        #new_inf = fpToReal(fpPlusInfinity(FPSort(8, 24)))
         first_implies = And(Implies(listOfBools[list_of_bools.index(holds1)],
                                     (listOfReals[list_of_reals.index(rew_phi)] == float(
                                         reward_model.get_state_reward(r_state[relevant_quantifier - 1])))),
                             Implies(Not(listOfReals[list_of_reals.index(prob_phi)] == float(1)),
-                                    listOfReals[list_of_reals.index(rew_phi)] == new_inf))
+                                    listOfReals[list_of_reals.index(rew_phi)] == float(-9999)))
         # float(fpPlusInfinity()  # How do we handle the case where prob != 1? TBD
         nos_of_subformula += 2  # I'm not sure how we are counting subformulas. Need to verify. OD: we can change these later, don't worry about them now
 
@@ -1009,7 +1009,8 @@ def SemanticsRewFuture(model, formula_duplicate, n):
                 float(reward_model.get_state_reward(r_state[
                                                         relevant_quantifier - 1])) + prod_left)  # why are we adding reward for just one state, might have to generalize this later
         nos_of_subformula += 1
-        s.add(And(first_implies, Implies(implies_precedent, implies_antecedent)))
+        sav = And(first_implies, Implies(implies_precedent, implies_antecedent))
+        s.add(sav)
         nos_of_subformula += 1
 
         while i >= 0 and (index[i] == (len(model.states) - 1) or (i + 1) not in rel_quant):
