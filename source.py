@@ -941,12 +941,12 @@ def SemanticsRewFuture(model, formula_duplicate, n):
         rew_phi += str_r_state + '_' + str(index_of_phi)
         add_to_variable_list(rew_phi)
 
-        #new_inf = fpToReal(fpPlusInfinity(FPSort(8, 24)))
+        new_inf = fpToReal(fpPlusInfinity(FPSort(8, 24)))
         first_implies = And(Implies(listOfBools[list_of_bools.index(holds1)],
                                     (listOfReals[list_of_reals.index(rew_phi)] == float(
                                         reward_model.get_state_reward(r_state[relevant_quantifier - 1])))),
                             Implies(Not(listOfReals[list_of_reals.index(prob_phi)] == float(1)),
-                                    listOfReals[list_of_reals.index(rew_phi)] == float(-9999)))
+                                    listOfReals[list_of_reals.index(rew_phi)] == new_inf))
         # float(fpPlusInfinity()  # How do we handle the case where prob != 1? TBD
         nos_of_subformula += 2  # I'm not sure how we are counting subformulas. Need to verify. OD: we can change these later, don't worry about them now
 
@@ -1075,6 +1075,7 @@ def Semantics(model, formula_duplicate, n, rel=[]):
         for j in range(0, n):
             index.append(0)
         i = n - 1
+        flag = False
         while i >= 0:
             name = 'holds'
             for ind in r_state:
@@ -1088,7 +1089,25 @@ def Semantics(model, formula_duplicate, n, rel=[]):
             while i >= 0 and (index[i] == (len(model.states) - 1) or (relevant_quantifier - 1) != i):
                 r_state[i] = 0
                 index[i] = 0
-                i = i - 1
+                k = i - 1
+                flago = False
+                while k >= 0:
+                    if k + 1 in rel_quant:
+                        flago = True
+                        break
+                    else:
+                        k -= 1
+                if flago and (i + 1) in rel_quant and k >= 0 and index[k] < (len(model.states) - 1):  # special case
+                    # when the current quantifier is relevant but it has reached the end of model states. So we
+                    # increase the previous quantifier value and continue with current quantifier
+                    index[i - 1] += 1
+                    r_state[i - 1] += 1
+                    flag = True
+                else:
+                    i = i - 1
+            if flag:
+                flag = False
+                continue
             if i >= 0:
                 index[i] += 1
                 r_state[i] = index[i]
