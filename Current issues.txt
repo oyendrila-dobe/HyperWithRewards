@@ -7,4 +7,4 @@ And(And(Implies(holds_0_4, rew_0_1 == 10),
             2/5*rew_2_1 +
             3/5*rew_1_1 +
             2/5*rew_2_1))
-Duplication of summands again.
+Duplication of summands again. I believe this is caused because the relevant quantifier is added twice.

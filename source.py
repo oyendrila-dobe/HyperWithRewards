@@ -74,8 +74,10 @@ nos_of_subformula = 0
 f_pointer = None
 
 
-def SemanticsRewUnboundedUntil(model, formula_duplicate, n):
-    return
+def ExtendWithoutDuplicates(list1, list2): #TODO: Determine which extends could cause issues and replace them with this.
+    result = list1
+    result.extend(x for x in list2 if x not in result)
+    return result
 
 
 def SemanticsRewBoundedUntil(model, formula_duplicate, n):
@@ -180,7 +182,7 @@ def SemanticsUnboundedUntil(model, formula_duplicate, n):
             list_of_ors = []
 
             for cs in combined_succ:
-                f = 0
+                #f = 0
                 prob_succ = 'prob'
                 holds_succ = 'holds'
                 d_current = 'd'
@@ -189,17 +191,17 @@ def SemanticsUnboundedUntil(model, formula_duplicate, n):
                 prod_left_part = None
                 for l in range(1, n + 1):
                     if l in rel_quant:
-                        space = cs[f].find(' ')
-                        succ_state = cs[f - 1][0:space]
+                        space = cs[l - 1].find(' ')
+                        succ_state = cs[l - 1][0:space]
                         prob_succ += '_' + succ_state
                         holds_succ += '_' + succ_state
                         d_succ += '_' + succ_state
                         if p_first:
-                            prod_left_part = RealVal(cs[f - 1][space + 1:]).as_fraction()
+                            prod_left_part = RealVal(cs[l - 1][space + 1:]).as_fraction()
                             p_first = False
                         else:
-                            prod_left_part *= RealVal(cs[f - 1][space + 1:]).as_fraction()
-                        f += 1
+                            prod_left_part *= RealVal(cs[l - 1][space + 1:]).as_fraction()
+                        #f += 1
 
                     else:
                         prob_succ += '_' + str(0)
@@ -258,6 +260,181 @@ def SemanticsUnboundedUntil(model, formula_duplicate, n):
 
     return rel_quant
 
+def SemanticsRewUnboundedUntil(model, formula_duplicate, n):
+    global nos_of_subformula
+    rel_quant = []
+    reward_model = model.reward_models.get('')
+    relevant_quantifier = int(formula_duplicate.children[0].value[1])
+    index_of_phi = list_of_subformula.index(formula_duplicate)
+    child = formula_duplicate.children[1]
+    prob_formula = Tree('calc_probability', [child])
+    phi1 = formula_duplicate.children[1].children[0]
+    index_of_phi1 = list_of_subformula.index(phi1)
+    rel_quant1 = Semantics(model, phi1, n)
+    rel_quant.extend(rel_quant1)
+    phi2 = formula_duplicate.children[1].children[1]
+    index_of_phi2 = list_of_subformula.index(phi2)
+    rel_quant2 = Semantics(model, phi2, n)
+    rel_quant.extend(rel_quant2)
+    r_state = [0 for ind in range(n)]
+
+    dict_of_acts = dict()
+    dict_of_acts_tran = dict()
+    for state in model.states:
+        list_of_act = []
+        for action in state.actions:
+            list_of_tran = []
+            list_of_act.append(action.id)
+            for tran in action.transitions:
+                list_of_tran.append(str(tran.column) + ' ' + str(tran.value()))
+            dict_of_acts_tran[str(state.id) + ' ' + str(action.id)] = list_of_tran
+        dict_of_acts[state.id] = list_of_act
+
+    # n = no.of quantifier, k = no. of state in the model
+    index = []
+    for j in range(0, n):
+        index.append(0)
+    i = n - 1
+    flag = False
+    while i >= 0:
+        holds1 = 'holds'
+        for ind in range(0, len(r_state)):
+            if (ind + 1) in rel_quant1:
+                holds1 += "_" + str(r_state[ind])
+            else:
+                holds1 += "_" + str(0)
+        holds1 += "_" + str(index_of_phi1)
+        add_to_variable_list(holds1)
+        holds2 = 'holds'
+        for ind in range(0, len(r_state)):
+            if (ind + 1) in rel_quant2:
+                holds2 += "_" + str(r_state[ind])
+            else:
+                holds2 += "_" + str(0)
+        holds2 += "_" + str(index_of_phi2)
+        add_to_variable_list(holds2)
+        prob_phi = 'prob'
+        for ind in r_state:
+            prob_phi += "_" + str(ind)
+        prob_phi += '_' + str(index_of_phi)
+        add_to_variable_list(prob_phi)
+        new_prob_const = listOfReals[list_of_reals.index(prob_phi)] >= float(0)
+        first_implies = And(Implies(listOfBools[list_of_bools.index(holds2)],
+                                    (listOfReals[list_of_reals.index(prob_phi)] == float(1))),
+                            Implies(And(Not(listOfBools[list_of_bools.index(holds1)]),
+                                        Not(listOfBools[list_of_bools.index(holds2)])),
+                                    (listOfReals[list_of_reals.index(prob_phi)] == float(0))),
+                            new_prob_const)
+        nos_of_subformula += 3
+
+        dicts = []
+        for l in rel_quant:
+            dicts.append(dict_of_acts[r_state[l - 1]])
+        combined_acts = list(itertools.product(*dicts))
+
+        for ca in combined_acts:
+            name = 'a_' + str(r_state[rel_quant[0] - 1])
+            add_to_variable_list(name)
+            act_str = listOfInts[list_of_ints.index(name)] == int(ca[0])
+            if len(rel_quant) > 1:
+                for l in range(2, len(rel_quant) + 1):
+                    name = 'a_' + str(rel_quant[l - 1] - 1)
+                    add_to_variable_list(name)
+                    act_str = And(act_str, listOfInts[list_of_ints.index(name)] == int(ca[l - 1]))
+
+            implies_precedent = And(listOfBools[list_of_bools.index(holds1)],
+                                    Not(listOfBools[list_of_bools.index(holds2)]), act_str)
+            nos_of_subformula += 2
+
+            dicts = []
+            g = 0
+            for l in rel_quant:
+                dicts.append(dict_of_acts_tran[str(r_state[l - 1]) + " " + str(ca[g])])
+                g += 1
+            combined_succ = list(itertools.product(*dicts))
+
+            first = True
+            prod_left = None
+            list_of_ors = []
+
+            for cs in combined_succ:
+                #f = 0
+                prob_succ = 'prob'
+                holds_succ = 'holds'
+                d_current = 'd'
+                d_succ = 'd'
+                p_first = True
+                prod_left_part = None
+                for l in range(1, n + 1):
+                    if l in rel_quant:
+                        space = cs[l - 1].find(' ')
+                        succ_state = cs[l - 1][0:space]
+                        prob_succ += '_' + succ_state
+                        holds_succ += '_' + succ_state
+                        d_succ += '_' + succ_state
+                        if p_first:
+                            prod_left_part = RealVal(cs[l - 1][space + 1:]).as_fraction()
+                            p_first = False
+                        else:
+                            prod_left_part *= RealVal(cs[l - 1][space + 1:]).as_fraction()
+                        #f += 1
+
+                    else:
+                        prob_succ += '_' + str(0)
+                        holds_succ += '_' + str(0)
+                        d_succ += '_' + str(0)
+                        if p_first:
+                            prod_left_part = RealVal(1).as_fraction()
+                            p_first = False
+                        else:
+                            prod_left_part *= RealVal(1).as_fraction()
+                    d_current += '_' + str(r_state[l - 1])
+
+                prob_succ += '_' + str(index_of_phi)
+                add_to_variable_list(prob_succ)
+                holds_succ += '_' + str(index_of_phi2)
+                add_to_variable_list(holds_succ)
+
+                d_current += '_' + str(index_of_phi2)
+                add_to_variable_list(d_current)
+                d_succ += '_' + str(index_of_phi2)
+                add_to_variable_list(d_succ)
+                prod_left_part *= listOfReals[list_of_reals.index(prob_succ)]
+
+                if first:
+                    prod_left = prod_left_part
+                    first = False
+                else:
+                    prod_left += prod_left_part
+                nos_of_subformula += 1
+
+                list_of_ors.append(Or(listOfBools[list_of_bools.index(holds_succ)],
+                                      listOfReals[list_of_reals.index(d_current)] > listOfReals[
+                                          list_of_reals.index(d_succ)]))
+
+                nos_of_subformula += 2
+
+            implies_antecedent_and1 = listOfReals[list_of_reals.index(prob_phi)] == prod_left
+            nos_of_subformula += 1
+            prod_right_or = Or([par for par in list_of_ors])
+            nos_of_subformula += 1
+            implies_antecedent_and2 = Implies(listOfReals[list_of_reals.index(prob_phi)] > 0, prod_right_or)
+            nos_of_subformula += 1
+            implies_antecedent = And(implies_antecedent_and1, implies_antecedent_and2)
+            nos_of_subformula += 1
+            s.add(And(first_implies, Implies(implies_precedent, implies_antecedent)))
+            nos_of_subformula += 1
+
+        while i >= 0 and (index[i] == (len(model.states) - 1) or (i + 1) not in rel_quant):
+            r_state[i] = 0
+            index[i] = 0
+            i = i - 1
+
+        if i >= 0:
+            index[i] = index[i] + 1
+            r_state[i] = index[i]
+
+    return rel_quant
 
 def SemanticsBoundedUntil(model, formula_duplicate, n):
     global nos_of_subformula
@@ -421,21 +598,21 @@ def SemanticsBoundedUntil(model, formula_duplicate, n):
                 prod_left = None
 
                 for cs in combined_succ:
-                    f = 0
+                    #f = 0
                     prob_succ = 'prob'
                     p_first = True
                     prod_left_part = None
                     for l in range(1, n + 1):
                         if l in rel_quant:
-                            space = cs[f].find(' ')
-                            succ_state = cs[f - 1][0:space]
+                            space = cs[l-1].find(' ')
+                            succ_state = cs[l - 1][0:space]
                             prob_succ += '_' + succ_state
                             if p_first:
-                                prod_left_part = RealVal(cs[f - 1][space + 1:]).as_fraction()
+                                prod_left_part = RealVal(cs[l - 1][space + 1:]).as_fraction()
                                 p_first = False
                             else:
-                                prod_left_part *= RealVal(cs[f - 1][space + 1:]).as_fraction()
-                            f += 1
+                                prod_left_part *= RealVal(cs[l - 1][space + 1:]).as_fraction()
+                            #f += 1
 
                         else:
                             prob_succ += '_' + str(0)
@@ -551,21 +728,21 @@ def SemanticsBoundedUntil(model, formula_duplicate, n):
                 prod_left = None
 
                 for cs in combined_succ:
-                    f = 0
+                    #f = 0
                     prob_succ = 'prob'
                     p_first = True
                     prod_left_part = None
                     for l in range(1, n + 1):
                         if l in rel_quant:
-                            space = cs[f].find(' ')
-                            succ_state = cs[f - 1][0:space]
+                            space = cs[l - 1].find(' ')
+                            succ_state = cs[l - 1][0:space]
                             prob_succ += '_' + succ_state
                             if p_first:
-                                prod_left_part = RealVal(cs[f - 1][space + 1:]).as_fraction()
+                                prod_left_part = RealVal(cs[l - 1][space + 1:]).as_fraction()
                                 p_first = False
                             else:
-                                prod_left_part *= RealVal(cs[f - 1][space + 1:]).as_fraction()
-                            f += 1
+                                prod_left_part *= RealVal(cs[l - 1][space + 1:]).as_fraction()
+                            #f += 1
 
                         else:
                             prob_succ += '_' + str(0)
@@ -677,21 +854,21 @@ def SemanticsNext(model, formula_duplicate, n):
             prod_left = None
 
             for cs in combined_succ:
-                f = 0
+                #f = 0
                 holdsToInt_succ = 'holdsToInt'
                 p_first = True
                 prod_left_part = None
                 for l in range(1, n + 1):
                     if l in rel_quant:
-                        space = cs[f].find(' ')
-                        succ_state = cs[f - 1][0:space]
+                        space = cs[l - 1].find(' ')
+                        succ_state = cs[l - 1][0:space]
                         holdsToInt_succ += '_' + succ_state
                         if p_first:
-                            prod_left_part = RealVal(cs[f - 1][space + 1:]).as_fraction()
+                            prod_left_part = RealVal(cs[l - 1][space + 1:]).as_fraction()
                             p_first = False
                         else:
-                            prod_left_part *= RealVal(cs[f - 1][space + 1:]).as_fraction()
-                        f += 1
+                            prod_left_part *= RealVal(cs[l - 1][space + 1:]).as_fraction()
+                        #f += 1
 
                     else:
                         holdsToInt_succ += '_' + str(0)
