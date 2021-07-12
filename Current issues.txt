@@ -1,0 +1,10 @@
+And(And(Implies(holds_0_4, rew_0_1 == 10),
+        Implies(Not(prob_0_2 == 1), rew_0_1 == -9999)),
+    Implies(And(prob_0_2 == 1, Not(holds_0_4)),
+            rew_0_1 ==
+            10 +
+            3/5*rew_1_1 +
+            2/5*rew_2_1 +
+            3/5*rew_1_1 +
+            2/5*rew_2_1))
+Duplication of summands again.

@@ -970,21 +970,21 @@ def SemanticsRewFuture(model, formula_duplicate, n):
         prod_left = None
 
         for cs in combined_succ:
-            f = 0
+            #f = 0
             rew_succ = 'rew'
             p_first = True
             prod_left_part = None
             for l in range(1, n + 1):
                 if l in rel_quant:
-                    space = cs[f].find(' ')
-                    succ_state = cs[f - 1][0:space]
+                    space = cs[l-1].find(' ')
+                    succ_state = cs[l - 1][0:space]
                     rew_succ += '_' + succ_state
                     if p_first:
-                        prod_left_part = RealVal(cs[f - 1][space + 1:]).as_fraction()
+                        prod_left_part = RealVal(cs[l - 1][space + 1:]).as_fraction()
                         p_first = False
                     else:
-                        prod_left_part *= RealVal(cs[f - 1][space + 1:]).as_fraction()
-                    f += 1
+                        prod_left_part *= RealVal(cs[l - 1][space + 1:]).as_fraction()
+                    #f += 1
 
                 else:
                     rew_succ += '_' + str(0)
@@ -1975,6 +1975,8 @@ def add_to_variable_list(name):
 def check_result(mdp_model):
     starting = time.process_time()
     t = s.check()
+    for c in s.assertions():        #print out constraints for testing
+        print (c)                   #
     z3time = time.process_time() - starting
     li_a = None
     model = None
