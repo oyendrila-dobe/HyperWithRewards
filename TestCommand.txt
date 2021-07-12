@@ -1,1 +1,2 @@
 python source.py benchmark_files/mdp/model.nm "E s1 . ~(R s1 (F safe(s1)) = 78)"
+python source.py benchmark_files/mdp/model.nm "E s1 . E s2. (begin(s1) & (R s1 (F safe(s2)) = 34))"

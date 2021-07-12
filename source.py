@@ -272,7 +272,7 @@ def SemanticsRewUnboundedUntil(model, formula_duplicate, n):
     phi1 = formula_duplicate.children[1].children[0]
     index_of_phi1 = list_of_subformula.index(phi1)
     phi2 = formula_duplicate.children[1].children[1]
-    index_of_phi2 = list_of_subformula.index(phi2))
+    index_of_phi2 = list_of_subformula.index(phi2)
     rel_quant = SemanticsUnboundedUntil(model, prob_formula, n, [relevant_quantifier])
     if relevant_quantifier not in rel_quant:
         rel_quant.append(relevant_quantifier)
