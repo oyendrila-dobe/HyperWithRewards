@@ -75,7 +75,8 @@ f_pointer = None
 
 
 def ExtendWithoutDuplicates(list1, list2): #TODO: Determine which extends could cause issues and replace them with this.
-    result = list1
+    result = []
+    result.extend(list1)
     result.extend(x for x in list2 if x not in result)
     return result
 
@@ -99,7 +100,7 @@ def SemanticsUnboundedUntil(model, formula_duplicate, n, rel=[]):
     phi2 = formula_duplicate.children[0].children[1]
     index_of_phi2 = list_of_subformula.index(phi2)
     rel_quant2 = Semantics(model, phi2, n)
-    rel_quant.extend(rel_quant2)
+    rel_quant = ExtendWithoutDuplicates(rel_quant, rel_quant2)
     r_state = [0 for ind in range(n)]
 
     dict_of_acts = dict()
@@ -274,6 +275,7 @@ def SemanticsRewUnboundedUntil(model, formula_duplicate, n):
     phi2 = formula_duplicate.children[1].children[1]
     index_of_phi2 = list_of_subformula.index(phi2)
     rel_quant = SemanticsUnboundedUntil(model, prob_formula, n, [relevant_quantifier])
+    rel_quant2 = Semantics(model, phi2, n)
     if relevant_quantifier not in rel_quant:
         rel_quant.append(relevant_quantifier)
     r_state = [0 for ind in range(n)]
@@ -444,7 +446,7 @@ def SemanticsBoundedUntil(model, formula_duplicate, n):
         rel_quant1 = Semantics(model, phi1, n)
         rel_quant2 = Semantics(model, phi2, n)
         rel_quant.extend(rel_quant1)
-        rel_quant.extend(rel_quant2)
+        rel_quant = ExtendWithoutDuplicates(rel_quant, rel_quant2)
         index = []
         for j in range(0, n):
             index.append(0)
@@ -1232,7 +1234,8 @@ def Semantics(model, formula_duplicate, n, rel=[]):
         ap_name = formula_duplicate.children[0].children[0].value
         relevant_quantifier = int(formula_duplicate.children[0].children[1].value[1])
         labeling = model.labeling
-        rel_quant.append(relevant_quantifier)  # n = no.of quantifier, k = no. of state in the model
+        if relevant_quantifier not in rel_quant:
+            rel_quant.append(relevant_quantifier)  # n = no.of quantifier, k = no. of state in the model
         and_for_yes = set()
         and_for_no = set()
         list_of_state_with_ap = []
@@ -1289,9 +1292,8 @@ def Semantics(model, formula_duplicate, n, rel=[]):
 
     elif formula_duplicate.data == 'and_op':
         rel_quant1 = Semantics(model, formula_duplicate.children[0], n)
-        rel_quant.extend(rel_quant1)
         rel_quant2 = Semantics(model, formula_duplicate.children[1], n)
-        rel_quant.extend(rel_quant2)
+        rel_quant = ExtendWithoutDuplicates(rel_quant1, rel_quant2)
         tmp_set = set(rel_quant)
         rel_quant = list(tmp_set)
         index_of_phi = list_of_subformula.index(formula_duplicate)
@@ -1362,7 +1364,7 @@ def Semantics(model, formula_duplicate, n, rel=[]):
         return rel_quant
 
     elif formula_duplicate.data == 'neg_op':
-        rel_quant.extend(Semantics(model, formula_duplicate.children[0], n))
+        rel_quant = ExtendWithoutDuplicates(rel_quant, Semantics(model, formula_duplicate.children[0], n))
         index_of_phi = list_of_subformula.index(formula_duplicate)
         index_of_phi1 = list_of_subformula.index(formula_duplicate.children[0])
 
@@ -1413,8 +1415,7 @@ def Semantics(model, formula_duplicate, n, rel=[]):
     elif formula_duplicate.data == 'less_prob':
         rel_quant1 = Semantics(model, formula_duplicate.children[0], n)
         rel_quant2 = Semantics(model, formula_duplicate.children[1], n)
-        rel_quant.extend(rel_quant1)
-        rel_quant.extend(rel_quant2)
+        rel_quant = ExtendWithoutDuplicates(rel_quant1, rel_quant2)
         index_of_phi = list_of_subformula.index(formula_duplicate)
         index_of_phi1 = list_of_subformula.index(formula_duplicate.children[0])
         index_of_phi2 = list_of_subformula.index(formula_duplicate.children[1])
@@ -1484,8 +1485,7 @@ def Semantics(model, formula_duplicate, n, rel=[]):
     elif formula_duplicate.data == 'less_rew':
         rel_quant1 = Semantics(model, formula_duplicate.children[0], n)
         rel_quant2 = Semantics(model, formula_duplicate.children[1], n)
-        rel_quant.extend(rel_quant1)
-        rel_quant.extend(rel_quant2)
+        rel_quant = ExtendWithoutDuplicates(rel_quant1, rel_quant2)
         index_of_phi = list_of_subformula.index(formula_duplicate)
         index_of_phi1 = list_of_subformula.index(formula_duplicate.children[0])
         index_of_phi2 = list_of_subformula.index(formula_duplicate.children[1])
@@ -1555,8 +1555,7 @@ def Semantics(model, formula_duplicate, n, rel=[]):
     elif formula_duplicate.data == 'greater_prob':
         rel_quant1 = Semantics(model, formula_duplicate.children[0], n)
         rel_quant2 = Semantics(model, formula_duplicate.children[1], n)
-        rel_quant.extend(rel_quant1)
-        rel_quant.extend(rel_quant2)
+        rel_quant = ExtendWithoutDuplicates(rel_quant1, rel_quant2)
         index_of_phi = list_of_subformula.index(formula_duplicate)
         index_of_phi1 = list_of_subformula.index(formula_duplicate.children[0])
         index_of_phi2 = list_of_subformula.index(formula_duplicate.children[1])
@@ -1626,8 +1625,7 @@ def Semantics(model, formula_duplicate, n, rel=[]):
     elif formula_duplicate.data == 'greater_rew':
         rel_quant1 = Semantics(model, formula_duplicate.children[0], n)
         rel_quant2 = Semantics(model, formula_duplicate.children[1], n)
-        rel_quant.extend(rel_quant1)
-        rel_quant.extend(rel_quant2)
+        rel_quant = ExtendWithoutDuplicates(rel_quant1, rel_quant2)
         index_of_phi = list_of_subformula.index(formula_duplicate)
         index_of_phi1 = list_of_subformula.index(formula_duplicate.children[0])
         index_of_phi2 = list_of_subformula.index(formula_duplicate.children[1])
@@ -1697,8 +1695,7 @@ def Semantics(model, formula_duplicate, n, rel=[]):
     elif formula_duplicate.data == 'equal_prob':
         rel_quant1 = Semantics(model, formula_duplicate.children[0], n)
         rel_quant2 = Semantics(model, formula_duplicate.children[1], n)
-        rel_quant.extend(rel_quant1)
-        rel_quant.extend(rel_quant2)
+        rel_quant = ExtendWithoutDuplicates(rel_quant1, rel_quant2)
         index_of_phi = list_of_subformula.index(formula_duplicate)
         index_of_phi1 = list_of_subformula.index(formula_duplicate.children[0])
         index_of_phi2 = list_of_subformula.index(formula_duplicate.children[1])
@@ -1768,8 +1765,7 @@ def Semantics(model, formula_duplicate, n, rel=[]):
     elif formula_duplicate.data == 'equal_rew':
         rel_quant1 = Semantics(model, formula_duplicate.children[0], n)
         rel_quant2 = Semantics(model, formula_duplicate.children[1], n)
-        rel_quant.extend(rel_quant1)
-        rel_quant.extend(rel_quant2)
+        rel_quant = ExtendWithoutDuplicates(rel_quant1, rel_quant2)
         index_of_phi = list_of_subformula.index(formula_duplicate)
         index_of_phi1 = list_of_subformula.index(formula_duplicate.children[0])
         index_of_phi2 = list_of_subformula.index(formula_duplicate.children[1])
@@ -1839,13 +1835,13 @@ def Semantics(model, formula_duplicate, n, rel=[]):
     elif formula_duplicate.data == 'calc_probability':
         child = formula_duplicate.children[0]
         if child.data == 'calc_next':
-            rel_quant.extend(SemanticsNext(model, formula_duplicate, n))
+            rel_quant = ExtendWithoutDuplicates(rel_quant, SemanticsNext(model, formula_duplicate, n, rel))
         elif child.data == 'calc_until_unbounded':
-            rel_quant.extend(SemanticsUnboundedUntil(model, formula_duplicate, n))
+            rel_quant = ExtendWithoutDuplicates(rel_quant, SemanticsUnboundedUntil(model, formula_duplicate, n, rel))
         elif child.data == 'calc_until_bounded':
-            rel_quant.extend(SemanticsBoundedUntil(model, formula_duplicate, n))
+            rel_quant = ExtendWithoutDuplicates(rel_quant, SemanticsBoundedUntil(model, formula_duplicate, n, rel))
         elif child.data == 'calc_future':
-            rel_quant.extend(SemanticsFuture(model, formula_duplicate, n, rel))
+            rel_quant = ExtendWithoutDuplicates(rel_quant, SemanticsFuture(model, formula_duplicate, n, rel))
         return rel_quant
 
     elif formula_duplicate.data == 'calc_reward':
@@ -1853,18 +1849,15 @@ def Semantics(model, formula_duplicate, n, rel=[]):
         prob_formula = Tree('calc_probability', [
             child])  # Importing a class for this is probably not the optimal way to do this, maybe try to find an alternative
         if child.data == 'calc_next':
-            SemanticsNext(model, prob_formula, n)
-            rel_quant.extend(SemanticsRewNext(model, formula_duplicate, n))
+            rel_quant = ExtendWithoutDuplicates(rel_quant, SemanticsRewNext(model, formula_duplicate, n))
         elif child.data == 'calc_until_unbounded':
-            SemanticsUnboundedUntil(model, prob_formula, n)
-            rel_quant.extend(SemanticsRewUnboundedUntil(model, formula_duplicate, n))
+            rel_quant = ExtendWithoutDuplicates(rel_quant, SemanticsRewUnboundedUntil(model, formula_duplicate, n))
         elif child.data == 'calc_until_bounded':
-            SemanticsBoundedUntil(model, prob_formula, n)
-            rel_quant.extend(SemanticsRewBoundedUntil(model, formula_duplicate, n))
+            rel_quant = ExtendWithoutDuplicates(rel_quant, SemanticsRewBoundedUntil(model, formula_duplicate, n))
         elif child.data == 'calc_future':
             # shifting this to rewards for the mixed state variable case (R s1 p(f( safe(s2)))
             # SemanticsFuture(model, prob_formula,n)  # it's relevant quantifier will be the same as the rewards, hence not adding it to avoid duplication
-            rel_quant.extend(SemanticsRewFuture(model, formula_duplicate, n))
+            rel_quant = ExtendWithoutDuplicates(rel_quant, SemanticsRewFuture(model, formula_duplicate, n))
         return rel_quant
 
     elif formula_duplicate.data == 'const':
@@ -1894,8 +1887,7 @@ def Semantics(model, formula_duplicate, n, rel=[]):
     elif formula_duplicate.data in ['add_prob', 'minus_prob', 'mul_prob']:
         rel_quant1 = Semantics(model, formula_duplicate.children[0], n)
         rel_quant2 = Semantics(model, formula_duplicate.children[1], n)
-        rel_quant.extend(rel_quant1)
-        rel_quant.extend(rel_quant2)
+        rel_quant = ExtendWithoutDuplicates(rel_quant1, rel_quant2)
         index_of_phi = list_of_subformula.index(formula_duplicate)
         index_left = list_of_subformula.index(formula_duplicate.children[0])
         index_right = list_of_subformula.index(formula_duplicate.children[1])
@@ -1972,8 +1964,7 @@ def Semantics(model, formula_duplicate, n, rel=[]):
     elif formula_duplicate.data in ['add_rew', 'minus_rew', 'mul_rew']:
         rel_quant1 = Semantics(model, formula_duplicate.children[0], n)
         rel_quant2 = Semantics(model, formula_duplicate.children[1], n)
-        rel_quant.extend(rel_quant1)
-        rel_quant.extend(rel_quant2)
+        rel_quant = ExtendWithoutDuplicates(rel_quant1, rel_quant2)
         index_of_phi = list_of_subformula.index(formula_duplicate)
         index_left = list_of_subformula.index(formula_duplicate.children[0])
         index_right = list_of_subformula.index(formula_duplicate.children[1])
