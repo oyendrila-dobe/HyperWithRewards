@@ -81,10 +81,6 @@ def ExtendWithoutDuplicates(list1, list2): #TODO: Determine which extends could 
     return result
 
 
-def SemanticsRewNext(model, formula_duplicate, n):
-    return
-
-
 def SemanticsUnboundedUntil(model, formula_duplicate, n, rel=[]):
     global nos_of_subformula
     rel_quant = []
@@ -810,7 +806,7 @@ def SemanticsRewBoundedUntil(model, formula_duplicate, n):
     child = formula_duplicate.children[1]
     prob_formula = Tree('calc_probability', [child])
     index_of_phi_prob = list_of_subformula.index(prob_formula)
-    rel_quant = Semantics(model, prob_formula, n, [relevant_quantifier])
+    rel_quant = SemanticsBoundedUntil(model, prob_formula, n, [relevant_quantifier])
     phi1 = formula_duplicate.children[1].children[0]
     index_of_phi1 = list_of_subformula.index(phi1)
     phi2 = formula_duplicate.children[1].children[3]
@@ -1296,6 +1292,150 @@ def SemanticsNext(model, formula_duplicate, n, rel=[]):
 
         if i >= 0:
             index[i] = index[i] + 1
+            r_state[i] = index[i]
+
+    return rel_quant
+
+
+def SemanticsRewNext(model, formula_duplicate, n):
+    global nos_of_subformula
+    rel_quant = []
+    reward_model = model.reward_models.get('')  # Currently requires unnamed reward model. Could change this part to allow multiple reward models
+    relevant_quantifier = int(formula_duplicate.children[0].value[1])
+    child = formula_duplicate.children[1]
+    phi1 = formula_duplicate.children[1].children[0]
+    prob_formula = Tree('calc_probability', [phi1])
+    index_of_phi1 = list_of_subformula.index(child)
+    index_of_phi = list_of_subformula.index(formula_duplicate)
+    index_of_phi_prob = list_of_subformula.index(prob_formula)
+    rel_quant = SemanticsNext(model, phi1, n, [relevant_quantifier])
+    r_state = [0 for ind in range(n)]
+
+    dict_of_acts = dict()
+    dict_of_acts_tran = dict()
+    for state in model.states:
+        list_of_act = []
+        for action in state.actions:
+            list_of_tran = []
+            list_of_act.append(action.id)
+            for tran in action.transitions:
+                list_of_tran.append(str(tran.column) + ' ' + str(tran.value()))
+            dict_of_acts_tran[str(state.id) + ' ' + str(action.id)] = list_of_tran
+        dict_of_acts[state.id] = list_of_act
+
+    # n = no.of quantifier, k = no. of state in the model
+    # holdsToInt has type real to avoid added complexity of multiplying integer to real values
+    index = []
+    for j in range(0, n):
+        index.append(0)
+    i = n - 1
+    flag = False
+    while i >= 0:
+        str_r_state = ""
+        for ind in r_state:
+            str_r_state += "_" + str(ind)
+        prob_phi = 'prob' + str_r_state + "_" + str(index_of_phi_prob)
+        add_to_variable_list(prob_phi)
+        rew_phi = 'rew' + str_r_state + "_" + str(index_of_phi)
+        add_to_variable_list(rew_phi)
+        first_implies = Implies(Not(listOfReals[list_of_reals.index(prob_phi)] == float(1)),
+                                    listOfReals[list_of_reals.index(rew_phi)] == float(-9999))
+        nos_of_subformula += 3
+        s.add(first_implies)
+        dicts = []
+        for l in rel_quant:
+            dicts.append(dict_of_acts[r_state[l - 1]])
+        combined_acts = list(itertools.product(*dicts))
+
+        for ca in combined_acts:
+            name = 'a_' + str(r_state[rel_quant[0] - 1])
+            add_to_variable_list(name)
+            act_str = listOfInts[list_of_ints.index(name)] == int(ca[0])
+            if len(rel_quant) > 1:
+                for l in range(2, len(rel_quant) + 1):
+                    name = 'a_' + str(rel_quant[l - 1] - 1)
+                    add_to_variable_list(name)
+                    act_str = And(act_str, listOfInts[list_of_ints.index(name)] == int(ca[l - 1]))
+
+            implies_precedent = And(listOfReals[list_of_reals.index(prob_phi)] == float(1), act_str)
+            nos_of_subformula += 1
+
+            dicts = []
+            g = 0
+            for l in rel_quant:
+                dicts.append(dict_of_acts_tran[str(r_state[l - 1]) + " " + str(ca[g])])
+                g += 1
+            combined_succ = list(itertools.product(*dicts))
+
+            first = True
+            prod_left = None
+
+            for cs in combined_succ:
+                #f = 0
+                rew_succ = 'rew'
+                p_first = True
+                prod_left_part = None
+                for l in range(1, n + 1):
+                    if l in rel_quant:
+                        space = cs[l - 1].find(' ')
+                        succ_state = cs[l - 1][0:space]
+                        rew_succ += '_' + succ_state
+                        if p_first:
+                            prod_left_part = RealVal(cs[l - 1][space + 1:]).as_fraction()
+                            p_first = False
+                        else:
+                            prod_left_part *= RealVal(cs[l - 1][space + 1:]).as_fraction()
+                        #f += 1
+
+                    else:
+                        rew_succ += '_' + str(0)
+                        if p_first:
+                            prod_left_part = RealVal(1).as_fraction()
+                            p_first = False
+                        else:
+                            prod_left_part *= RealVal(1).as_fraction()
+
+                rew_succ += '_' + str(index_of_phi1)
+                add_to_variable_list(rew_succ)
+                prod_left_part *= listOfReals[list_of_reals.index(rew_succ)]
+
+                if first:
+                    prod_left = prod_left_part
+                    first = False
+                else:
+                    prod_left += prod_left_part
+                nos_of_subformula += 1
+
+            implies_antecedent_and = listOfReals[list_of_reals.index(rew_phi)] == (float(reward_model.get_state_reward(r_state[
+                                relevant_quantifier - 1])) + prod_left)
+            nos_of_subformula += 1
+            s.add(Implies(implies_precedent, implies_antecedent_and))
+            nos_of_subformula += 1
+
+        while i >= 0 and (index[i] == (len(model.states) - 1) or (i + 1) not in rel_quant):
+            r_state[i] = 0
+            index[i] = 0
+            k = i - 1
+            flago = False
+            while k >= 0:
+                if k + 1 in rel_quant:
+                    flago = True
+                    break
+                else:
+                    k -= 1
+            if flago and (i + 1) in rel_quant and k >= 0 and index[k] < (len(model.states) - 1):  # special case
+                # when the current quantifier is relevant but it has reached the end of model states. So we
+                # increase the previous quantifier value and continue with current quantifier
+                index[i - 1] += 1
+                r_state[i - 1] += 1
+                flag = True
+            else:
+                i = i - 1
+        if flag:
+            flag = False
+            continue
+        if i >= 0:
+            index[i] += 1
             r_state[i] = index[i]
 
     return rel_quant
