@@ -1492,86 +1492,96 @@ def SemanticsFuture(model, formula_duplicate, n, rel=[]):
             dicts.append(dict_of_acts[r_state[l - 1]])
         combined_acts = list(itertools.product(*dicts))
 
-        implies_precedent = Not(listOfBools[list_of_bools.index(holds1)])
-        nos_of_subformula += 1
+        for ca in combined_acts:
+            name = 'a_' + str(r_state[rel_quant[0] - 1])
+            add_to_variable_list(name)
+            act_str = listOfInts[list_of_ints.index(name)] == int(ca[0])
+            if len(rel_quant) > 1:
+                for l in range(2, len(rel_quant) + 1):
+                    name = 'a_' + str(rel_quant[l - 1] - 1)
+                    add_to_variable_list(name)
+                    act_str = And(act_str, listOfInts[list_of_ints.index(name)] == int(ca[l - 1]))
 
-        dicts = []
-        g = 0
-        for l in rel_quant:
-            dicts.append(dict_of_acts_tran[str(r_state[l - 1]) + " " + str(combined_acts[0][g])])
-            g += 1
-        combined_succ = list(itertools.product(*dicts))
-
-        first = True
-        prod_left = None
-        list_of_ors = []
-
-        for cs in combined_succ:
-            #f = 0
-            prob_succ = 'prob'
-            holds_succ = 'holds'
-            d_current = 'd'
-            d_succ = 'd'
-            p_first = True
-            prod_left_part = None
-            for l in range(1, n + 1):
-                if l in rel_quant:
-                    space = cs[l-1].find(' ')
-                    succ_state = cs[l-1][0:space]
-                    prob_succ += '_' + succ_state
-                    holds_succ += '_' + succ_state
-                    d_succ += '_' + succ_state
-                    if p_first:
-                        prod_left_part = RealVal(cs[l - 1][space + 1:]).as_fraction()
-                        p_first = False
-                    else:
-                        prod_left_part *= RealVal(cs[l - 1][space + 1:]).as_fraction()
-                    #f += 1
-
-                else:
-                    prob_succ += '_' + str(0)
-                    holds_succ += '_' + str(0)
-                    d_succ += '_' + str(0)
-                    if p_first:
-                        prod_left_part = RealVal(1).as_fraction()
-                        p_first = False
-                    else:
-                        prod_left_part *= RealVal(1).as_fraction()
-                d_current += '_' + str(r_state[l - 1])
-
-            prob_succ += '_' + str(index_of_phi)
-            add_to_variable_list(prob_succ)
-            holds_succ += '_' + str(index_of_phi1)
-            add_to_variable_list(holds_succ)
-            d_current += '_' + str(index_of_phi1)
-            add_to_variable_list(d_current)
-            d_succ += '_' + str(index_of_phi1)
-            add_to_variable_list(d_succ)
-            prod_left_part *= listOfReals[list_of_reals.index(prob_succ)]
-
-            if first:
-                prod_left = prod_left_part
-                first = False
-            else:
-                prod_left += prod_left_part
-            nos_of_subformula += 1
-
-            list_of_ors.append(Or(listOfBools[list_of_bools.index(holds_succ)],
-                                  listOfReals[list_of_reals.index(d_current)] > listOfReals[
-                                      list_of_reals.index(d_succ)]))
-
+            implies_precedent = And(Not(listOfBools[list_of_bools.index(holds1)]), act_str)
             nos_of_subformula += 2
 
-        implies_antecedent_and1 = listOfReals[list_of_reals.index(prob_phi)] == prod_left
-        nos_of_subformula += 1
-        prod_right_or = Or([par for par in list_of_ors])
-        nos_of_subformula += 1
-        implies_antecedent_and2 = Implies(listOfReals[list_of_reals.index(prob_phi)] > 0, prod_right_or)
-        nos_of_subformula += 1
-        implies_antecedent = And(implies_antecedent_and1, implies_antecedent_and2)
-        nos_of_subformula += 1
-        s.add(And(first_implies, Implies(implies_precedent, implies_antecedent)))
-        nos_of_subformula += 1
+            dicts = []
+            g = 0
+            for l in rel_quant:
+                dicts.append(dict_of_acts_tran[str(r_state[l - 1]) + " " + str(ca[g])])
+                g += 1
+            combined_succ = list(itertools.product(*dicts))
+
+            first = True
+            prod_left = None
+            list_of_ors = []
+
+            for cs in combined_succ:
+                #f = 0
+                prob_succ = 'prob'
+                holds_succ = 'holds'
+                d_current = 'd'
+                d_succ = 'd'
+                p_first = True
+                prod_left_part = None
+                for l in range(1, n + 1):
+                    if l in rel_quant:
+                        space = cs[l-1].find(' ')
+                        succ_state = cs[l-1][0:space]
+                        prob_succ += '_' + succ_state
+                        holds_succ += '_' + succ_state
+                        d_succ += '_' + succ_state
+                        if p_first:
+                            prod_left_part = RealVal(cs[l - 1][space + 1:]).as_fraction()
+                            p_first = False
+                        else:
+                            prod_left_part *= RealVal(cs[l - 1][space + 1:]).as_fraction()
+                        #f += 1
+
+                    else:
+                        prob_succ += '_' + str(0)
+                        holds_succ += '_' + str(0)
+                        d_succ += '_' + str(0)
+                        if p_first:
+                            prod_left_part = RealVal(1).as_fraction()
+                            p_first = False
+                        else:
+                            prod_left_part *= RealVal(1).as_fraction()
+                    d_current += '_' + str(r_state[l - 1])
+
+                prob_succ += '_' + str(index_of_phi)
+                add_to_variable_list(prob_succ)
+                holds_succ += '_' + str(index_of_phi1)
+                add_to_variable_list(holds_succ)
+                d_current += '_' + str(index_of_phi1)
+                add_to_variable_list(d_current)
+                d_succ += '_' + str(index_of_phi1)
+                add_to_variable_list(d_succ)
+                prod_left_part *= listOfReals[list_of_reals.index(prob_succ)]
+
+                if first:
+                    prod_left = prod_left_part
+                    first = False
+                else:
+                    prod_left += prod_left_part
+                nos_of_subformula += 1
+
+                list_of_ors.append(Or(listOfBools[list_of_bools.index(holds_succ)],
+                                    listOfReals[list_of_reals.index(d_current)] > listOfReals[
+                                        list_of_reals.index(d_succ)]))
+
+                nos_of_subformula += 2
+
+            implies_antecedent_and1 = listOfReals[list_of_reals.index(prob_phi)] == prod_left
+            nos_of_subformula += 1
+            prod_right_or = Or([par for par in list_of_ors])
+            nos_of_subformula += 1
+            implies_antecedent_and2 = Implies(listOfReals[list_of_reals.index(prob_phi)] > 0, prod_right_or)
+            nos_of_subformula += 1
+            implies_antecedent = And(implies_antecedent_and1, implies_antecedent_and2)
+            nos_of_subformula += 1
+            s.add(And(first_implies, Implies(implies_precedent, implies_antecedent)))
+            nos_of_subformula += 1
 
         while i >= 0 and (index[i] == (len(model.states) - 1) or (i + 1) not in rel_quant):
             r_state[i] = 0
@@ -1667,63 +1677,73 @@ def SemanticsRewFuture(model, formula_duplicate, n):
             dicts.append(dict_of_acts[r_state[l - 1]])
         combined_acts = list(itertools.product(*dicts))
 
-        implies_precedent = And(listOfReals[list_of_reals.index(prob_phi)] == float(1),
-                                Not(listOfBools[list_of_bools.index(holds1)]))
-        nos_of_subformula += 2  # Here too
+        for ca in combined_acts:
+            name = 'a_' + str(r_state[rel_quant[0] - 1])
+            add_to_variable_list(name)
+            act_str = listOfInts[list_of_ints.index(name)] == int(ca[0])
+            if len(rel_quant) > 1:
+                for l in range(2, len(rel_quant) + 1):
+                    name = 'a_' + str(rel_quant[l - 1] - 1)
+                    add_to_variable_list(name)
+                    act_str = And(act_str, listOfInts[list_of_ints.index(name)] == int(ca[l - 1]))
 
-        dicts = []
-        g = 0
-        for l in rel_quant:
-            dicts.append(dict_of_acts_tran[str(r_state[l - 1]) + " " + str(combined_acts[0][g])])
-            g += 1
-        combined_succ = list(itertools.product(*dicts))
+            implies_precedent = And(listOfReals[list_of_reals.index(prob_phi)] == float(1),
+                                    Not(listOfBools[list_of_bools.index(holds1)]), act_str)
+            nos_of_subformula += 2  # Here too
 
-        first = True
-        prod_left = None
+            dicts = []
+            g = 0
+            for l in rel_quant:
+                dicts.append(dict_of_acts_tran[str(r_state[l - 1]) + " " + str(ca[g])])
+                g += 1
+            combined_succ = list(itertools.product(*dicts))
 
-        for cs in combined_succ:
-            #f = 0
-            rew_succ = 'rew'
-            p_first = True
-            prod_left_part = None
-            for l in range(1, n + 1):
-                if l in rel_quant:
-                    space = cs[l-1].find(' ')
-                    succ_state = cs[l - 1][0:space]
-                    rew_succ += '_' + succ_state
-                    if p_first:
-                        prod_left_part = RealVal(cs[l - 1][space + 1:]).as_fraction()
-                        p_first = False
+            first = True
+            prod_left = None
+
+            for cs in combined_succ:
+                #f = 0
+                rew_succ = 'rew'
+                p_first = True
+                prod_left_part = None
+                for l in range(1, n + 1):
+                    if l in rel_quant:
+                        space = cs[l-1].find(' ')
+                        succ_state = cs[l - 1][0:space]
+                        rew_succ += '_' + succ_state
+                        if p_first:
+                            prod_left_part = RealVal(cs[l - 1][space + 1:]).as_fraction()
+                            p_first = False
+                        else:
+                            prod_left_part *= RealVal(cs[l - 1][space + 1:]).as_fraction()
+                        #f += 1
+
                     else:
-                        prod_left_part *= RealVal(cs[l - 1][space + 1:]).as_fraction()
-                    #f += 1
+                        rew_succ += '_' + str(0)
+                        if p_first:
+                            prod_left_part = RealVal(1).as_fraction()
+                            p_first = False
+                        else:
+                            prod_left_part *= RealVal(1).as_fraction()
 
+                rew_succ += '_' + str(index_of_phi)
+                add_to_variable_list(rew_succ)
+                prod_left_part *= listOfReals[list_of_reals.index(rew_succ)]
+
+                if first:
+                    prod_left = prod_left_part
+                    first = False
                 else:
-                    rew_succ += '_' + str(0)
-                    if p_first:
-                        prod_left_part = RealVal(1).as_fraction()
-                        p_first = False
-                    else:
-                        prod_left_part *= RealVal(1).as_fraction()
+                    prod_left += prod_left_part
+                nos_of_subformula += 1
 
-            rew_succ += '_' + str(index_of_phi)
-            add_to_variable_list(rew_succ)
-            prod_left_part *= listOfReals[list_of_reals.index(rew_succ)]
-
-            if first:
-                prod_left = prod_left_part
-                first = False
-            else:
-                prod_left += prod_left_part
+            implies_antecedent = listOfReals[list_of_reals.index(rew_phi)] == (
+                    float(reward_model.get_state_reward(r_state[
+                                                            relevant_quantifier - 1])) + prod_left)  # why are we adding reward for just one state, might have to generalize this later
             nos_of_subformula += 1
-
-        implies_antecedent = listOfReals[list_of_reals.index(rew_phi)] == (
-                float(reward_model.get_state_reward(r_state[
-                                                        relevant_quantifier - 1])) + prod_left)  # why are we adding reward for just one state, might have to generalize this later
-        nos_of_subformula += 1
-        sav = And(first_implies, Implies(implies_precedent, implies_antecedent))
-        s.add(sav)
-        nos_of_subformula += 1
+            sav = And(first_implies, Implies(implies_precedent, implies_antecedent))
+            s.add(sav)
+            nos_of_subformula += 1
 
         while i >= 0 and (index[i] == (len(model.states) - 1) or (i + 1) not in rel_quant):
             r_state[i] = 0
@@ -2585,7 +2605,9 @@ def Truth(model, formula_initial, combined_list_of_states, n):
     list_of_AV = []  # will have the OR, AND according to the quantifier in that index in the formula
 
     while len(formula_initial.children) > 0 and type(formula_initial.children[0]) == Token:
-        if formula_initial.data == 'exist':
+        if formula_initial.data in ['exist_scheduler', 'forall_scheduler']:
+            formula_initial = formula_initial.children[1]
+        elif formula_initial.data == 'exist':
             list_of_AV.append('V')
             formula_initial = formula_initial.children[1]
         elif formula_initial.data == 'forall':
@@ -2623,7 +2645,7 @@ def Truth(model, formula_initial, combined_list_of_states, n):
 
 
 def add_to_subformula_list(formula_phi):  # add as you go any new subformula part as needed
-    if formula_phi.data in ['exist', 'forall']:
+    if formula_phi.data in ['exist_scheduler', 'forall_scheduler','exist', 'forall']:
         formula_phi = formula_phi.children[1]
         add_to_subformula_list(formula_phi)
     elif formula_phi.data in ['and_op', 'less_prob', 'greater_prob', 'add_prob', 'minus_prob', 'mul_prob',
@@ -2764,7 +2786,7 @@ def edit_formula(formula_inp):
     print(formula_inp)
     formula_inp_dup = formula_inp
     while len(formula_inp_dup.children) > 0 and type(formula_inp_dup.children[0]) == Token:
-        if formula_inp_dup.data in ['exist', 'forall']:
+        if formula_inp_dup.data in ['exist_scheduler', 'forall_scheduler', 'exist', 'forall']:
             formula_inp_dup = formula_inp_dup.children[1]
     return formula_inp, formula_inp_dup, nos_of_quantifier
 
@@ -2773,6 +2795,18 @@ def main_smt_encoding(model, formula_initial):
     global nos_of_subformula
     list_of_states = []
     starttime = time.perf_counter()
+    for state in model.states:
+        list_of_eqns = []
+        name = "a_" + str(state.id)  # a_1 means action for state 1
+        add_to_variable_list(name)
+        for action in state.actions:
+             list_of_eqns.append(listOfInts[list_of_ints.index(name)] == int(action.id))
+        if len(list_of_eqns) == 1:
+             s.add(list_of_eqns[0])
+        else:
+             s.add(Or([par for par in list_of_eqns]))
+        nos_of_subformula += 1
+    print("Encoded actions in the MDP...")
 
     formula_initial, formula_duplicate, n_of_state_quantifier = edit_formula(formula_initial)
 
@@ -2780,7 +2814,7 @@ def main_smt_encoding(model, formula_initial):
         list_of_states.append(state.id)
     combined_list_of_states = list(itertools.product(list_of_states, repeat=n_of_state_quantifier))
 
-    if formula_initial.data == 'exist':
+    if formula_initial.data == 'exist_scheduler':
         add_to_subformula_list(formula_initial)
         Truth(model, formula_initial, combined_list_of_states, n_of_state_quantifier)
         print("Encoded quantifiers")
@@ -2808,10 +2842,14 @@ def main_smt_encoding(model, formula_initial):
         print("Number of variables: " + str(len(list_of_ints) + len(list_of_reals) + len(list_of_bools)))
         print("Number of formula checked: " + str(nos_of_subformula))
 
-    elif formula_initial.data == 'forall':
+    elif formula_initial.data == 'forall_scheduler':
         tmp_formula = formula_initial
         while len(tmp_formula.children) > 0 and type(tmp_formula.children[0]) == Token:
-            if tmp_formula.data == 'exist':
+            if tmp_formula.data == 'exist_scheduler':
+                tmp_formula.data = 'forall_scheduler'
+            elif tmp_formula.data == 'forall_scheduler':
+                tmp_formula.data = 'exist_scheduler'
+            elif tmp_formula.data == 'exist':
                 tmp_formula.data = 'forall'
             elif tmp_formula.data == 'forall':
                 tmp_formula.data = 'exist'
@@ -2828,7 +2866,7 @@ def main_smt_encoding(model, formula_initial):
 
         formula_duplicate = copy.deepcopy(formula_initial)
         while len(formula_duplicate.children) > 0 and type(formula_duplicate.children[0]) == Token:
-            if formula_duplicate.data in ['exist', 'forall']:
+            if formula_duplicate.data in ['exist_scheduler', 'forall_scheduler', 'exist', 'forall']:
                 formula_duplicate = formula_duplicate.children[1]
         add_to_subformula_list(formula_initial)
         Truth(model, formula_initial, combined_list_of_states, n_of_state_quantifier)
