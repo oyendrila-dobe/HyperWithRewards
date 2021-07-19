@@ -2761,7 +2761,9 @@ def edit_formula(formula_inp):
     nos_of_quantifier = 0
     quantifier_change = []  # false indicates the quantifier was deleted, true indicates it'll stay but might need name change
     while len(formula_inp_dup.children) > 0 and type(formula_inp_dup.children[0]) == Token:
-        if formula_inp_dup.data in ['exist', 'forall']:
+        if formula_inp_dup.data in ['exist_scheduler', 'forall_scheduler']:
+            formula_inp_dup = formula_inp_dup.children[1] #Not sure if this part is correct
+        elif formula_inp_dup.data in ['exist', 'forall']:
             tok = formula_inp_dup.children[0]
             res = find_token(formula_inp_dup.children[1], tok)
             if not res:
