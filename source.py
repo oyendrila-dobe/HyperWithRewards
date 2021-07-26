@@ -177,7 +177,7 @@ def SemanticsUnboundedUntil(model, formula_duplicate, n, rel=[]):
             list_of_ors = []
 
             for cs in combined_succ:
-                #f = 0
+                f = 0
                 prob_succ = 'prob'
                 holds_succ = 'holds'
                 d_current = 'd'
@@ -186,17 +186,17 @@ def SemanticsUnboundedUntil(model, formula_duplicate, n, rel=[]):
                 prod_left_part = None
                 for l in range(1, n + 1):
                     if l in rel_quant:
-                        space = cs[l - 1].find(' ')
-                        succ_state = cs[l - 1][0:space]
+                        space = cs[f].find(' ')
+                        succ_state = cs[f][0:space]
                         prob_succ += '_' + succ_state
                         holds_succ += '_' + succ_state
                         d_succ += '_' + succ_state
                         if p_first:
-                            prod_left_part = RealVal(cs[l - 1][space + 1:]).as_fraction()
+                            prod_left_part = RealVal(cs[f][space + 1:]).as_fraction()
                             p_first = False
                         else:
-                            prod_left_part *= RealVal(cs[l - 1][space + 1:]).as_fraction()
-                        #f += 1
+                            prod_left_part *= RealVal(cs[f][space + 1:]).as_fraction()
+                        f += 1
 
                     else:
                         prob_succ += '_' + str(0)
@@ -347,21 +347,21 @@ def SemanticsRewUnboundedUntil(model, formula_duplicate, n):
             list_of_ors = []
 
             for cs in combined_succ:
-                #f = 0
+                f = 0
                 rew_succ = 'rew'
                 p_first = True
                 prod_left_part = None
                 for l in range(1, n + 1):
                     if l in rel_quant:
-                        space = cs[l - 1].find(' ')
-                        succ_state = cs[l - 1][0:space]
+                        space = cs[f].find(' ')
+                        succ_state = cs[f][0:space]
                         rew_succ += '_' + succ_state
                         if p_first:
-                            prod_left_part = RealVal(cs[l - 1][space + 1:]).as_fraction()
+                            prod_left_part = RealVal(cs[f][space + 1:]).as_fraction()
                             p_first = False
                         else:
-                            prod_left_part *= RealVal(cs[l - 1][space + 1:]).as_fraction()
-                        #f += 1
+                            prod_left_part *= RealVal(cs[f][space + 1:]).as_fraction()
+                        f += 1
 
                     else:
                         rew_succ += '_' + str(0)
@@ -583,21 +583,21 @@ def SemanticsBoundedUntil(model, formula_duplicate, n, rel=[]):
                 prod_left = None
 
                 for cs in combined_succ:
-                    #f = 0
+                    f = 0
                     prob_succ = 'prob'
                     p_first = True
                     prod_left_part = None
                     for l in range(1, n + 1):
                         if l in rel_quant:
-                            space = cs[l-1].find(' ')
-                            succ_state = cs[l - 1][0:space]
+                            space = cs[f].find(' ')
+                            succ_state = cs[f][0:space]
                             prob_succ += '_' + succ_state
                             if p_first:
-                                prod_left_part = RealVal(cs[l - 1][space + 1:]).as_fraction()
+                                prod_left_part = RealVal(cs[f][space + 1:]).as_fraction()
                                 p_first = False
                             else:
-                                prod_left_part *= RealVal(cs[l - 1][space + 1:]).as_fraction()
-                            #f += 1
+                                prod_left_part *= RealVal(cs[f][space + 1:]).as_fraction()
+                            f += 1
 
                         else:
                             prob_succ += '_' + str(0)
@@ -729,21 +729,21 @@ def SemanticsBoundedUntil(model, formula_duplicate, n, rel=[]):
                 prod_left = None
 
                 for cs in combined_succ:
-                    #f = 0
+                    f = 0
                     prob_succ = 'prob'
                     p_first = True
                     prod_left_part = None
                     for l in range(1, n + 1):
                         if l in rel_quant:
-                            space = cs[l - 1].find(' ')
-                            succ_state = cs[l - 1][0:space]
+                            space = cs[f].find(' ')
+                            succ_state = cs[f][0:space]
                             prob_succ += '_' + succ_state
                             if p_first:
-                                prod_left_part = RealVal(cs[l - 1][space + 1:]).as_fraction()
+                                prod_left_part = RealVal(cs[f][space + 1:]).as_fraction()
                                 p_first = False
                             else:
-                                prod_left_part *= RealVal(cs[l - 1][space + 1:]).as_fraction()
-                            #f += 1
+                                prod_left_part *= RealVal(cs[f][space + 1:]).as_fraction()
+                            f += 1
 
                         else:
                             prob_succ += '_' + str(0)
@@ -956,21 +956,21 @@ def SemanticsRewBoundedUntil(model, formula_duplicate, n):
                 prod_left = None
 
                 for cs in combined_succ:
-                    #f = 0
+                    f = 0
                     rew_succ = 'rew'
                     p_first = True
                     prod_left_part = None
                     for l in range(1, n + 1):
                         if l in rel_quant:
-                            space = cs[l-1].find(' ')
-                            succ_state = cs[l - 1][0:space]
+                            space = cs[f].find(' ')
+                            succ_state = cs[f][0:space]
                             rew_succ += '_' + succ_state
                             if p_first:
-                                prod_left_part = RealVal(cs[l - 1][space + 1:]).as_fraction()
+                                prod_left_part = RealVal(cs[f][space + 1:]).as_fraction()
                                 p_first = False
                             else:
-                                prod_left_part *= RealVal(cs[l - 1][space + 1:]).as_fraction()
-                            #f += 1
+                                prod_left_part *= RealVal(cs[f][space + 1:]).as_fraction()
+                            f += 1
 
                         else:
                             rew_succ += '_' + str(0)
@@ -1100,21 +1100,21 @@ def SemanticsRewBoundedUntil(model, formula_duplicate, n):
                 prod_left = None
 
                 for cs in combined_succ:
-                    #f = 0
+                    f = 0
                     rew_succ = 'rew'
                     p_first = True
                     prod_left_part = None
                     for l in range(1, n + 1):
                         if l in rel_quant:
-                            space = cs[l - 1].find(' ')
-                            succ_state = cs[l - 1][0:space]
+                            space = cs[f].find(' ')
+                            succ_state = cs[f][0:space]
                             rew_succ += '_' + succ_state
                             if p_first:
-                                prod_left_part = RealVal(cs[l - 1][space + 1:]).as_fraction()
+                                prod_left_part = RealVal(cs[f][space + 1:]).as_fraction()
                                 p_first = False
                             else:
-                                prod_left_part *= RealVal(cs[l - 1][space + 1:]).as_fraction()
-                            #f += 1
+                                prod_left_part *= RealVal(cs[f][space + 1:]).as_fraction()
+                            f += 1
 
                         else:
                             rew_succ += '_' + str(0)
@@ -1245,21 +1245,21 @@ def SemanticsNext(model, formula_duplicate, n, rel=[]):
             prod_left = None
 
             for cs in combined_succ:
-                #f = 0
+                f = 0
                 holdsToInt_succ = 'holdsToInt'
                 p_first = True
                 prod_left_part = None
                 for l in range(1, n + 1):
                     if l in rel_quant:
-                        space = cs[l - 1].find(' ')
-                        succ_state = cs[l - 1][0:space]
+                        space = cs[f].find(' ')
+                        succ_state = cs[f][0:space]
                         holdsToInt_succ += '_' + succ_state
                         if p_first:
-                            prod_left_part = RealVal(cs[l - 1][space + 1:]).as_fraction()
+                            prod_left_part = RealVal(cs[f][space + 1:]).as_fraction()
                             p_first = False
                         else:
-                            prod_left_part *= RealVal(cs[l - 1][space + 1:]).as_fraction()
-                        #f += 1
+                            prod_left_part *= RealVal(cs[f][space + 1:]).as_fraction()
+                        f += 1
 
                     else:
                         holdsToInt_succ += '_' + str(0)
@@ -1371,21 +1371,21 @@ def SemanticsRewNext(model, formula_duplicate, n):
             prod_left = None
 
             for cs in combined_succ:
-                #f = 0
+                f = 0
                 rew_succ = 'rew'
                 p_first = True
                 prod_left_part = None
                 for l in range(1, n + 1):
                     if l in rel_quant:
-                        space = cs[l - 1].find(' ')
-                        succ_state = cs[l - 1][0:space]
+                        space = cs[f].find(' ')
+                        succ_state = cs[f][0:space]
                         rew_succ += '_' + succ_state
                         if p_first:
-                            prod_left_part = RealVal(cs[l - 1][space + 1:]).as_fraction()
+                            prod_left_part = RealVal(cs[f][space + 1:]).as_fraction()
                             p_first = False
                         else:
-                            prod_left_part *= RealVal(cs[l - 1][space + 1:]).as_fraction()
-                        #f += 1
+                            prod_left_part *= RealVal(cs[f][space + 1:]).as_fraction()
+                        f += 1
 
                     else:
                         rew_succ += '_' + str(0)
@@ -1517,7 +1517,7 @@ def SemanticsFuture(model, formula_duplicate, n, rel=[]):
             list_of_ors = []
 
             for cs in combined_succ:
-                #f = 0
+                f = 0
                 prob_succ = 'prob'
                 holds_succ = 'holds'
                 d_current = 'd'
@@ -1526,17 +1526,17 @@ def SemanticsFuture(model, formula_duplicate, n, rel=[]):
                 prod_left_part = None
                 for l in range(1, n + 1):
                     if l in rel_quant:
-                        space = cs[l-1].find(' ')
-                        succ_state = cs[l-1][0:space]
+                        space = cs[f].find(' ')
+                        succ_state = cs[f][0:space]
                         prob_succ += '_' + succ_state
                         holds_succ += '_' + succ_state
                         d_succ += '_' + succ_state
                         if p_first:
-                            prod_left_part = RealVal(cs[l - 1][space + 1:]).as_fraction()
+                            prod_left_part = RealVal(cs[f][space + 1:]).as_fraction()
                             p_first = False
                         else:
-                            prod_left_part *= RealVal(cs[l - 1][space + 1:]).as_fraction()
-                        #f += 1
+                            prod_left_part *= RealVal(cs[f][space + 1:]).as_fraction()
+                        f += 1
 
                     else:
                         prob_succ += '_' + str(0)
@@ -1702,21 +1702,21 @@ def SemanticsRewFuture(model, formula_duplicate, n):
             prod_left = None
 
             for cs in combined_succ:
-                #f = 0
+                f = 0
                 rew_succ = 'rew'
                 p_first = True
                 prod_left_part = None
                 for l in range(1, n + 1):
                     if l in rel_quant:
-                        space = cs[l-1].find(' ')
-                        succ_state = cs[l - 1][0:space]
+                        space = cs[f].find(' ')
+                        succ_state = cs[f][0:space]
                         rew_succ += '_' + succ_state
                         if p_first:
-                            prod_left_part = RealVal(cs[l - 1][space + 1:]).as_fraction()
+                            prod_left_part = RealVal(cs[f][space + 1:]).as_fraction()
                             p_first = False
                         else:
-                            prod_left_part *= RealVal(cs[l - 1][space + 1:]).as_fraction()
-                        #f += 1
+                            prod_left_part *= RealVal(cs[f][space + 1:]).as_fraction()
+                        f += 1
 
                     else:
                         rew_succ += '_' + str(0)
@@ -2698,8 +2698,8 @@ def add_to_variable_list(name):
 def check_result(mdp_model):
     starting = time.process_time()
     t = s.check()
-    for c in s.assertions():        #print out constraints for testing
-        print (c)                   #
+    #for c in s.assertions():        #print out constraints for testing
+    #    print (c)                   #
     z3time = time.process_time() - starting
     li_a = None
     model = None

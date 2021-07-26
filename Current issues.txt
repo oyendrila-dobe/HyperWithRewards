@@ -1,1 +1,1 @@
-None that I know of.
+Replacing cs[f] with cs[l-1] causes the index to be out of range sometimes. We could likely make rel_quant an ordered list and solve the problem, or think of other solutions.
