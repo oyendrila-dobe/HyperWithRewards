@@ -76,8 +76,10 @@ f_pointer = None
 
 def ExtendWithoutDuplicates(list1, list2): #TODO: Determine which extends could cause issues and replace them with this.
     result = []
-    result.extend(list1)
-    result.extend(x for x in list2 if x not in result)
+    if list1 is not None:
+        result.extend(list1)
+    if list2 is not None:
+        result.extend(x for x in list2 if x not in result)
     return result
 
 
@@ -1903,11 +1905,12 @@ def Semantics(model, formula_duplicate, n, rel=[]):
                 k = i - 1
                 flago = False
                 while k >= 0:
-                    if k + 1 in rel_quant:
+                    if k + 1  in rel_quant:
                         flago = True
                         break
                     else:
                         k -= 1
+                        # can be optimized further
                 if flago and (i + 1) in rel_quant and k >= 0 and index[k] < (len(model.states) - 1):  # special case
                     # when the current quantifier is relevant but it has reached the end of model states. So we
                     # increase the previous quantifier value and continue with current quantifier
@@ -2168,7 +2171,7 @@ def Semantics(model, formula_duplicate, n, rel=[]):
                         break
                     else:
                         k -= 1
-                if flago and (i + 1) in rel_quant and (k) >= 0 and index[k] < (len(
+                if flago and (i + 1) in rel_quant and k >= 0 and index[k] < (len(
                         model.states) - 1):  # special case when the current quantifier is relevant but it has reached the end of model states. SO we increase the previous quantifier value and continue with current quantifier
                     index[i - 1] += 1
                     r_state[i - 1] += 1
@@ -2584,7 +2587,7 @@ def Semantics(model, formula_duplicate, n, rel=[]):
                         break
                     else:
                         k -= 1
-                if flago and (i + 1) in rel_quant and (k) >= 0 and index[k] < (len(
+                if flago and (i + 1) in rel_quant and k >= 0 and index[k] < (len(
                         model.states) - 1):  # special case when the current quantifier is relevant but it has reached the end of model states. So we increase the previous quantifier value and continue with current quantifier
                     index[i - 1] += 1
                     r_state[i - 1] += 1
@@ -2763,6 +2766,7 @@ def edit_formula(formula_inp):
     while len(formula_inp_dup.children) > 0 and type(formula_inp_dup.children[0]) == Token:
         if formula_inp_dup.data in ['exist_scheduler', 'forall_scheduler']:
             formula_inp_dup = formula_inp_dup.children[1] #Not sure if this part is correct
+                                                        #OD: Here i'm just arranging the state quantifeir and expect a single scheduler variable
         elif formula_inp_dup.data in ['exist', 'forall']:
             tok = formula_inp_dup.children[0]
             res = find_token(formula_inp_dup.children[1], tok)
