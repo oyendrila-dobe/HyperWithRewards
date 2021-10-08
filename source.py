@@ -1714,6 +1714,7 @@ def SemanticsRewFuture(model, formula_duplicate, n):
                         succ_state = cs[f][0:space]
                         rew_succ += '_' + succ_state
                         if p_first:
+                            #print(str(RealVal(cs[f][space + 1:])) + "\n")
                             prod_left_part = RealVal(cs[f][space + 1:]).as_fraction()
                             p_first = False
                         else:
@@ -2256,6 +2257,76 @@ def Semantics(model, formula_duplicate, n, rel=[]):
                 r_state[i] = index[i]
         return rel_quant
 
+    elif formula_duplicate.data == 'greatereq_rew':
+        rel_quant1 = Semantics(model, formula_duplicate.children[0], n)
+        rel_quant2 = Semantics(model, formula_duplicate.children[1], n)
+        rel_quant = ExtendWithoutDuplicates(rel_quant1, rel_quant2)
+        index_of_phi = list_of_subformula.index(formula_duplicate)
+        index_of_phi1 = list_of_subformula.index(formula_duplicate.children[0])
+        index_of_phi2 = list_of_subformula.index(formula_duplicate.children[1])
+
+        index = []
+        for j in range(0, n):
+            index.append(0)
+        i = n - 1
+        flag = False
+        while i >= 0:
+            name1 = 'holds'
+            for ind in r_state:
+                name1 += "_" + str(ind)
+            name1 += '_' + str(index_of_phi)
+            add_to_variable_list(name1)
+            name2 = 'rew'
+            for ind in range(0, len(r_state)):
+                if (ind + 1) in rel_quant1:
+                    name2 += "_" + str(r_state[ind])
+                else:
+                    name2 += "_" + str(0)
+            name2 += '_' + str(index_of_phi1)
+            add_to_variable_list(name2)
+            name3 = 'rew'
+            for ind in range(0, len(r_state)):
+                if (ind + 1) in rel_quant2:
+                    name3 += "_" + str(r_state[ind])
+                else:
+                    name3 += "_" + str(0)
+            name3 += '_' + str(index_of_phi2)
+            add_to_variable_list(name3)
+            and_eq = And(listOfBools[list_of_bools.index(name1)],
+                         listOfReals[list_of_reals.index(name2)] == listOfReals[list_of_reals.index(name3)])
+            nos_of_subformula += 1
+            and_not_eq = And(Not(listOfBools[list_of_bools.index(name1)]),
+                             listOfReals[list_of_reals.index(name2)] != listOfReals[list_of_reals.index(name3)])
+            nos_of_subformula += 1
+            s.add(Or(and_eq, and_not_eq))
+            nos_of_subformula += 1
+
+            while i >= 0 and (index[i] == (len(model.states) - 1) or (i + 1) not in rel_quant):
+                r_state[i] = 0
+                index[i] = 0
+                k = i - 1
+                flago = False
+                while k >= 0:
+                    if k + 1 in rel_quant:
+                        flago = True
+                        break
+                    else:
+                        k -= 1
+                if flago and (i + 1) in rel_quant and (k) >= 0 and index[k] < (len(
+                        model.states) - 1):  # special case when the current quantifier is relevant but it has reached the end of model states. SO we increase the previous quantifier value and continue with current quantifier
+                    index[i - 1] += 1
+                    r_state[i - 1] += 1
+                    flag = True
+                else:
+                    i = i - 1
+            if flag:
+                flag = False
+                continue
+            if i >= 0:
+                index[i] += 1
+                r_state[i] = index[i]
+        return rel_quant
+
     elif formula_duplicate.data == 'equal_prob':
         rel_quant1 = Semantics(model, formula_duplicate.children[0], n)
         rel_quant2 = Semantics(model, formula_duplicate.children[1], n)
@@ -2484,16 +2555,16 @@ def Semantics(model, formula_duplicate, n, rel=[]):
             name3 += '_' + str(index_right)
             add_to_variable_list(name3)
             if formula_duplicate.data == 'add_prob':
-                s.add(listOfReals[list_of_reals.index(name3)] == (
-                        listOfReals[list_of_reals.index(name1)] + listOfReals[list_of_reals.index(name2)]))
+                s.add(listOfReals[list_of_reals.index(name1)] == (
+                        listOfReals[list_of_reals.index(name2)] + listOfReals[list_of_reals.index(name3)]))
                 nos_of_subformula += 2
             elif formula_duplicate.data == 'minus_prob':
-                s.add(listOfReals[list_of_reals.index(name3)] == (
-                        listOfReals[list_of_reals.index(name1)] - listOfReals[list_of_reals.index(name2)]))
+                s.add(listOfReals[list_of_reals.index(name1)] == (
+                        listOfReals[list_of_reals.index(name2)] - listOfReals[list_of_reals.index(name3)]))
                 nos_of_subformula += 2
             elif formula_duplicate.data == 'mul_prob':
-                s.add(listOfReals[list_of_reals.index(name3)] == (
-                        listOfReals[list_of_reals.index(name1)] * listOfReals[list_of_reals.index(name2)]))
+                s.add(listOfReals[list_of_reals.index(name1)] == (
+                        listOfReals[list_of_reals.index(name2)] * listOfReals[list_of_reals.index(name3)]))
                 nos_of_subformula += 2
             else:
                 print("Unexpected operator. Exiting")
@@ -2561,16 +2632,18 @@ def Semantics(model, formula_duplicate, n, rel=[]):
             name3 += '_' + str(index_right)
             add_to_variable_list(name3)
             if formula_duplicate.data == 'add_rew':
-                s.add(listOfReals[list_of_reals.index(name3)] == (
-                        listOfReals[list_of_reals.index(name1)] + listOfReals[list_of_reals.index(name2)]))
+                s.add(listOfReals[list_of_reals.index(name1)] == (
+                        listOfReals[list_of_reals.index(name2)] + listOfReals[list_of_reals.index(name3)]))
                 nos_of_subformula += 2
             elif formula_duplicate.data == 'minus_rew':
-                s.add(listOfReals[list_of_reals.index(name3)] == (
-                        listOfReals[list_of_reals.index(name1)] - listOfReals[list_of_reals.index(name2)]))
+                s.add(listOfReals[list_of_reals.index(name1)] == (
+                        listOfReals[list_of_reals.index(name2)] - listOfReals[list_of_reals.index(name3)]))
                 nos_of_subformula += 2
             elif formula_duplicate.data == 'mul_rew':
-                s.add(listOfReals[list_of_reals.index(name3)] == (
-                        listOfReals[list_of_reals.index(name1)] * listOfReals[list_of_reals.index(name2)]))
+                mu = listOfReals[list_of_reals.index(name1)] == (
+                        listOfReals[list_of_reals.index(name2)] * listOfReals[list_of_reals.index(name3)])
+                s.add(listOfReals[list_of_reals.index(name1)] == (
+                        listOfReals[list_of_reals.index(name2)] * listOfReals[list_of_reals.index(name3)]))
                 nos_of_subformula += 2
             else:
                 print("Unexpected operator. Exiting")
@@ -2653,7 +2726,7 @@ def add_to_subformula_list(formula_phi):  # add as you go any new subformula par
         add_to_subformula_list(formula_phi)
     elif formula_phi.data in ['and_op', 'less_prob', 'greater_prob', 'add_prob', 'minus_prob', 'mul_prob',
                               'calc_until_unbounded', 'equal_prob',
-                              'less_rew', 'greater_rew', 'add_rew', 'minus_rew', 'mul_rew', 'equal_rew']:
+                              'less_rew', 'greater_rew', 'greatereq_rew', 'add_rew', 'minus_rew', 'mul_rew', 'equal_rew']:
         if formula_phi not in list_of_subformula:
             list_of_subformula.append(formula_phi)
         left_child = formula_phi.children[0]
@@ -2702,7 +2775,7 @@ def check_result(mdp_model):
     starting = time.process_time()
     t = s.check()
     #for c in s.assertions():        #print out constraints for testing
-    #    print (c)                   #
+    #    print (c)
     z3time = time.process_time() - starting
     li_a = None
     model = None
@@ -2716,6 +2789,8 @@ def check_result(mdp_model):
         return True, model, s.statistics(), z3time
     elif t.r == -1:
         return False, model, s.statistics(), z3time
+    else:
+        return False
 
 
 def find_token(formula, tok):
@@ -2837,16 +2912,18 @@ def main_smt_encoding(model, formula_initial):
             for i in range(len(all)):
                 print(str(all[i]) + " = " + str(all[all[i]]))
             print("\n")
+            print("\nTime to encode in seconds: " + str(round(smt_end_time, 2)))
+            print("Time required by z3 in seconds: " + str(round(z3time, 2)))
         else:
             print("The property DOES NOT hold!")
 
-        print("z3 statistics:")
-        print(statis)
-        print("\nTime to encode in seconds: " + str(round(smt_end_time, 2)))
-        print("Time required by z3 in seconds: " + str(round(z3time, 2)))
-        print("\n")
         print("Number of variables: " + str(len(list_of_ints) + len(list_of_reals) + len(list_of_bools)))
         print("Number of formula checked: " + str(nos_of_subformula))
+        print("\n")
+        print("z3 statistics:")
+        print(statis)
+
+
 
     elif formula_initial.data == 'forall_scheduler':
         tmp_formula = formula_initial
@@ -2882,6 +2959,8 @@ def main_smt_encoding(model, formula_initial):
         smt_end_time = time.perf_counter() - starttime
 
         print("Time to encode in seconds: " + str(round(smt_end_time, 2)))
+        print("Number of variables: " + str(len(list_of_ints) + len(list_of_reals) + len(list_of_bools)))
+        print("Number of formula checked: " + str(nos_of_subformula))
         print("Checking...")
         res, all, statis, z3time = check_result(model)
         if res:
@@ -2895,11 +2974,10 @@ def main_smt_encoding(model, formula_initial):
 
         print("z3 statistics:")
         print(statis)
-        print("\nTime to encode in seconds: " + str(round(smt_end_time, 2)))
         print("Time required by z3 in seconds: " + str(round(z3time, 2)))
+        print("Total time required: " + str(round(round(z3time, 2) + round(smt_end_time, 2),2)))
         print("\n")
-        print("Number of variables: " + str(len(list_of_ints) + len(list_of_reals) + len(list_of_bools)))
-        print("Number of formula checked: " + str(nos_of_subformula))
+
 
 
 def rebuild_exact_value_model(initial_mod):
